@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tomato Master</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link rel="stylesheet" href="app.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-inner">
+      <span class="app-logo">🍅</span>
+      <h1 class="app-title">Tomato Master</h1>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <!-- Context Note Banner (shown after break ends) -->
+    <div id="note-context" class="note-context-banner hidden" role="alert" aria-live="polite">
+      <span class="material-icons note-icon">sticky_note_2</span>
+      <div class="note-content">
+        <p class="note-label">Your context note</p>
+        <p id="note-context-text" class="note-text"></p>
+      </div>
+      <button id="btn-dismiss-note" class="note-dismiss" aria-label="Dismiss note" onclick="document.getElementById('note-context').classList.add('hidden')">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+
+    <!-- Active Task Banner -->
+    <div class="active-task-wrapper hidden">
+      <div class="active-task-banner">
+        <span class="material-icons">task_alt</span>
+        <p class="active-task-label">Working on:</p>
+        <p id="active-task-display" class="active-task-text"></p>
+      </div>
+    </div>
+
+    <!-- Timer Card -->
+    <div id="timer-card" class="card timer-card">
+      <div class="timer-ring-wrapper">
+        <svg class="timer-svg" viewBox="0 0 264 264" aria-hidden="true">
+          <circle class="ring-track" cx="132" cy="132" r="120" />
+          <circle id="timer-ring" class="ring-progress" cx="132" cy="132" r="120"
+            stroke-dasharray="753.98"
+            stroke-dashoffset="0"
+            transform="rotate(-90 132 132)" />
+        </svg>
+        <div class="timer-center">
+          <span id="timer-display" class="timer-display" aria-live="polite" aria-atomic="true">25:00</span>
+          <span id="timer-label" class="timer-label">Ready</span>
+        </div>
+      </div>
+
+      <!-- Timer Type Buttons -->
+      <div class="timer-type-buttons">
+        <button id="btn-work" class="btn btn-timer-type btn-work" aria-label="Start work session">
+          <span class="material-icons">work</span>
+          <span>Work <em>25m</em></span>
+        </button>
+        <button id="btn-short-break" class="btn btn-timer-type btn-short-break" aria-label="Start short break">
+          <span class="material-icons">coffee</span>
+          <span>Short Break <em>5m</em></span>
+        </button>
+        <button id="btn-long-break" class="btn btn-timer-type btn-long-break" aria-label="Start long break">
+          <span class="material-icons">weekend</span>
+          <span>Long Break <em>15m</em></span>
+        </button>
+      </div>
+
+      <!-- Timer Control Buttons -->
+      <div class="timer-controls">
+        <button id="btn-pause-resume" class="btn btn-icon btn-primary" style="display:none" aria-label="Pause timer">
+          <span class="material-icons">pause</span>
+        </button>
+        <button id="btn-cancel" class="btn btn-icon btn-outlined" style="display:none" aria-label="Cancel timer">
+          <span class="material-icons">stop</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Task Manager Card -->
+    <div class="card tasks-card">
+      <h2 class="card-title">
+        <span class="material-icons">checklist</span>
+        Tasks
+      </h2>
+      <div class="task-input-row">
+        <input
+          type="text"
+          id="task-input"
+          class="task-input"
+          placeholder="Add a new task..."
+          aria-label="New task"
+          maxlength="200"
+        />
+        <button id="btn-add-task" class="btn btn-fab" aria-label="Add task">
+          <span class="material-icons">add</span>
+        </button>
+      </div>
+      <ul id="task-list" class="task-list" aria-label="Tasks">
+        <li class="task-empty">No tasks yet. Add one above!</li>
+      </ul>
+    </div>
+  </main>
+
+  <!-- Note Modal -->
+  <div id="note-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="material-icons modal-icon">edit_note</span>
+        <h2 id="modal-title" class="modal-title">Work Session Complete!</h2>
+      </div>
+      <p class="modal-subtitle">Write a quick note about where you left off — it'll help you get back in the zone after your break.</p>
+      <textarea
+        id="note-textarea"
+        class="note-textarea"
+        placeholder="e.g. Just finished the login form, next: wire up the API call..."
+        rows="4"
+        maxlength="500"
+        aria-label="Context note"
+      ></textarea>
+      <div class="modal-actions">
+        <button id="btn-note-skip" class="btn btn-text">Skip</button>
+        <button id="btn-note-save" class="btn btn-primary btn-raised">Save Note</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
