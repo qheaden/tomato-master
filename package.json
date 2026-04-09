@@ -1,0 +1,22 @@
+{
+  "name": "tomato-master",
+  "version": "1.0.0",
+  "description": "A Pomodoro task tracker with note-taking context",
+  "scripts": {
+    "build": "npx esbuild src/app.ts --bundle --outfile=dist/app.js --platform=browser --target=es2020 && cp index.html dist/ && cp app.css dist/",
+    "test": "mocha --require ts-node/register 'test/**/*.test.ts'",
+    "serve": "npx serve dist"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.3.11",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.11.5",
+    "@types/sinon": "^17.0.3",
+    "chai": "^4.4.1",
+    "esbuild": "^0.28.0",
+    "mocha": "^10.2.0",
+    "sinon": "^17.0.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
