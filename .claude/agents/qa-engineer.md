@@ -16,6 +16,7 @@ Before working, you ensure Playwright CLI is installed. If it isn't, follow "htt
 - Start the HTTP server in the background with `python3 -m http.server dist &` and it should listen on port 8000 by default
 - Use the `playwright-cli` skill to learn how to use Playwright CLI for testing
 - As you work through the application, take screenshots and view them to ensure the UI/UX is pleasant to work with and view
+- Be sure to delete the screenshots you take after you are done with them
 
 ## Reporting
 
