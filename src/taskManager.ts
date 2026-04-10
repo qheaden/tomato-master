@@ -5,18 +5,59 @@ export interface Task {
   createdAt: number;
 }
 
+export interface TaskStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+}
+
 export interface TaskManagerConfig {
   onTasksChanged: (tasks: Task[], activeTask: Task | null) => void;
+  storage?: TaskStorage;
 }
+
+interface PersistedTaskState {
+  tasks: Task[];
+  activeTaskId: string | null;
+  nextId: number;
+}
+
+const STORAGE_KEY = 'tomato-master:tasks';
 
 export class TaskManager {
   private tasks: Task[] = [];
   private activeTaskId: string | null = null;
   private config: TaskManagerConfig;
   private nextId: number = 1;
+  private storage: TaskStorage | null;
 
   constructor(config: TaskManagerConfig) {
     this.config = config;
+    this.storage = config.storage ?? null;
+    this.loadFromStorage();
+  }
+
+  private loadFromStorage(): void {
+    if (!this.storage) return;
+    const raw = this.storage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const state: PersistedTaskState = JSON.parse(raw);
+      this.tasks = state.tasks ?? [];
+      this.activeTaskId = state.activeTaskId ?? null;
+      this.nextId = state.nextId ?? this.tasks.length + 1;
+    } catch {
+      // ignore corrupt data
+    }
+  }
+
+  private saveToStorage(): void {
+    if (!this.storage) return;
+    const state: PersistedTaskState = {
+      tasks: this.tasks,
+      activeTaskId: this.activeTaskId,
+      nextId: this.nextId,
+    };
+    this.storage.setItem(STORAGE_KEY, JSON.stringify(state));
   }
 
   addTask(text: string): Task {
@@ -84,6 +125,7 @@ export class TaskManager {
   }
 
   private notify(): void {
+    this.saveToStorage();
     this.config.onTasksChanged([...this.tasks], this.getActiveTask());
   }
 }

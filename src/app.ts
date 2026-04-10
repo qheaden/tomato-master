@@ -46,11 +46,13 @@ class TomatoMasterApp {
 
     this.taskManager = new TaskManager({
       onTasksChanged: (tasks, active) => this.renderTasks(tasks, active),
+      storage: localStorage,
     });
 
     this.noteManager = new NoteManager({
       onNoteSet: (note) => this.renderNote(note),
       onNoteRequested: () => { /* handled directly via showNoteModal */ },
+      storage: localStorage,
     });
 
     this.notificationService = new NotificationService();
@@ -61,6 +63,9 @@ class TomatoMasterApp {
     this.bindEvents();
     this.resetTimerDisplay();
     this.notificationService.requestPermission();
+    // Render persisted state loaded from storage
+    this.renderTasks(this.taskManager.getTasks(), this.taskManager.getActiveTask());
+    this.renderNote(this.noteManager.getCurrentNote());
   }
 
   private bindElements(): void {
