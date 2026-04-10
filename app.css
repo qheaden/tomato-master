@@ -803,3 +803,40 @@ body[data-timer-type="long-break"] .ring-progress {
   outline: 3px solid var(--primary);
   outline-offset: 2px;
 }
+
+/* ===========================
+   Test Notifications Button
+=========================== */
+.btn-test-notifications {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--outline);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--on-surface-variant);
+  font-family: var(--font);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: background var(--transition), box-shadow var(--transition);
+  z-index: 100;
+}
+
+.btn-test-notifications .material-icons {
+  font-size: 1rem;
+}
+
+.btn-test-notifications:hover {
+  background: var(--surface-variant);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-test-notifications:active {
+  background: var(--outline-light);
+}

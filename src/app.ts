@@ -1,11 +1,13 @@
 import { PomodoroTimer, TimerType, TimerState } from './timer';
 import { TaskManager, Task } from './taskManager';
 import { NoteManager, Note } from './noteManager';
+import { NotificationService } from './notificationService';
 
 class TomatoMasterApp {
   private timer: PomodoroTimer;
   private taskManager: TaskManager;
   private noteManager: NoteManager;
+  private notificationService: NotificationService;
   private _timerCancelledByUser = false;
 
   // Timer UI elements
@@ -50,12 +52,15 @@ class TomatoMasterApp {
       onNoteSet: (note) => this.renderNote(note),
       onNoteRequested: () => { /* handled directly via showNoteModal */ },
     });
+
+    this.notificationService = new NotificationService();
   }
 
   init(): void {
     this.bindElements();
     this.bindEvents();
     this.resetTimerDisplay();
+    this.notificationService.requestPermission();
   }
 
   private bindElements(): void {
@@ -100,6 +105,11 @@ class TomatoMasterApp {
         e.preventDefault();
         this.saveNote();
       }
+    });
+
+    document.getElementById('btn-test-notifications')?.addEventListener('click', () => {
+      this.notificationService.playAlarm();
+      this.notificationService.notify('Work Session Complete!', 'Great work! Time for a break.');
     });
   }
 
@@ -155,9 +165,21 @@ class TomatoMasterApp {
   }
 
   private onTimerComplete(type: TimerType): void {
+    const cancelled = this._timerCancelledByUser;
+    this._timerCancelledByUser = false;
+
+    if (!cancelled) {
+      this.notificationService.playAlarm();
+      const notifyMessages: Record<TimerType, { title: string; body: string }> = {
+        'work': { title: 'Work Session Complete!', body: 'Great work! Time for a break.' },
+        'short-break': { title: 'Break Complete!', body: 'Ready to get back to work?' },
+        'long-break': { title: 'Long Break Complete!', body: 'Ready to get back to work?' },
+      };
+      const { title, body } = notifyMessages[type];
+      this.notificationService.notify(title, body);
+    }
+
     if (type === 'work') {
-      const cancelled = this._timerCancelledByUser;
-      this._timerCancelledByUser = false;
       const title = cancelled ? 'Session Cancelled' : 'Work Session Complete!';
       this.showNoteModal(title);
     }
