@@ -107,7 +107,30 @@
         <li class="task-empty">No tasks yet. Add one above!</li>
       </ul>
     </div>
+
+    <!-- YouTube Card -->
+    <div id="youtube-card" class="card youtube-card">
+      <h2 class="card-title">
+        <span class="material-icons">play_circle</span>
+        YouTube Playlist
+      </h2>
+      <div class="youtube-input-row">
+        <input
+          type="text"
+          id="youtube-url-input"
+          class="task-input"
+          placeholder="Paste YouTube playlist URL..."
+          aria-label="YouTube playlist URL"
+        />
+        <button id="btn-load-playlist" class="btn btn-fab" aria-label="Load playlist">
+          <span class="material-icons">playlist_add</span>
+        </button>
+      </div>
+      <div id="youtube-player-container" class="youtube-player-container hidden"></div>
+    </div>
   </main>
+
+
 
   <!-- Note Modal -->
   <div id="note-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">

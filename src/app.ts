@@ -3,6 +3,14 @@ import { TaskManager, Task } from './taskManager';
 import { NoteManager, Note } from './noteManager';
 import { NotificationService } from './notificationService';
 
+// Declare YouTube API types to avoid TypeScript errors
+declare global {
+  interface Window {
+    onYouTubeIframeAPIReady: () => void;
+    YT: any;
+  }
+}
+
 class TomatoMasterApp {
   private timer: PomodoroTimer;
   private taskManager: TaskManager;
@@ -34,6 +42,14 @@ class TomatoMasterApp {
   private noteContext!: HTMLElement;
   private noteContextText!: HTMLElement;
 
+  // YouTube UI elements
+  private youtubeCard!: HTMLElement;
+  private youtubeUrlInput!: HTMLInputElement;
+  private loadPlaylistBtn!: HTMLButtonElement;
+  private youtubeApiReady = false;
+  private pendingYouTubePlaylistUrl: string | null = null;
+  private player!: any;
+
   // Ring animation constants
   private readonly RING_CIRCUMFERENCE = 2 * Math.PI * 120;
 
@@ -63,9 +79,10 @@ class TomatoMasterApp {
     this.bindEvents();
     this.resetTimerDisplay();
     this.notificationService.requestPermission();
-    // Render persisted state loaded from storage
     this.renderTasks(this.taskManager.getTasks(), this.taskManager.getActiveTask());
     this.renderNote(this.noteManager.getCurrentNote());
+
+    this.initYouTube();
   }
 
   private bindElements(): void {
@@ -89,6 +106,11 @@ class TomatoMasterApp {
     this.noteSkipBtn = document.getElementById('btn-note-skip') as HTMLButtonElement;
     this.noteContext = document.getElementById('note-context')!;
     this.noteContextText = document.getElementById('note-context-text')!;
+
+    this.youtubeCard = document.getElementById('youtube-card')!;
+    this.youtubeUrlInput = document.getElementById('youtube-url-input') as HTMLInputElement;
+    this.loadPlaylistBtn = document.getElementById('btn-load-playlist') as HTMLButtonElement;
+    this.youtubePlayerContainer = document.getElementById('youtube-player-container')!;
   }
 
   private bindEvents(): void {
@@ -112,11 +134,133 @@ class TomatoMasterApp {
       }
     });
 
+    this.loadPlaylistBtn.addEventListener('click', () => this.handlePlaylistUrlSubmit());
+
     document.getElementById('btn-test-notifications')?.addEventListener('click', () => {
       this.notificationService.playAlarm();
       this.notificationService.notify('Work Session Complete!', 'Great work! Time for a break.');
     });
+
+    // Setup global YouTube callback
+    (window as any).onYouTubeIframeAPIReady = () => {
+      this.onYouTubeIframeAPIReady();
+    };
   }
+
+  private initYouTube(): void {
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+
+    const savedUrl = localStorage.getItem('youtube-playlist-url');
+    if (savedUrl) {
+      this.youtubeUrlInput.value = savedUrl;
+      this.handlePlaylistUrlSubmit(savedUrl);
+    }
+  }
+
+  private onYouTubeIframeAPIReady(): void {
+    this.youtubeApiReady = true;
+    if (this.pendingYouTubePlaylistUrl) {
+      const pendingUrl = this.pendingYouTubePlaylistUrl;
+      this.pendingYouTubePlaylistUrl = null;
+      this.handlePlaylistUrlSubmit(pendingUrl);
+    }
+  }
+
+  private handlePlaylistUrlSubmit(url?: string): void {
+    const inputUrl = url || this.youtubeUrlInput.value.trim();
+    if (!inputUrl) return;
+
+    const playlistId = this.extractPlaylistId(inputUrl);
+    if (!playlistId) {
+      alert('Invalid YouTube playlist URL. Please provide a link to a playlist or a video with a list parameter.');
+      return;
+    }
+
+    this.youtubeCard.classList.remove('hidden');
+    this.youtubePlayerContainer.classList.remove('hidden');
+    localStorage.setItem('youtube-playlist-url', inputUrl);
+
+    if (!this.youtubeApiReady || !window.YT || typeof window.YT.Player !== 'function') {
+      this.pendingYouTubePlaylistUrl = inputUrl;
+      return;
+    }
+
+    if (!this.player) {
+      this.player = new window.YT.Player('youtube-player-container', {
+        height: '100%',
+        width: '100%',
+        playerVars: {
+          listType: 'playlist',
+          list: playlistId,
+          playsinline: 1,
+        },
+        events: {
+          onReady: (event: any) => this.onYouTubePlayerReady(event),
+          onStateChange: (event: any) => this.onYouTubeStateChange(event),
+        },
+      });
+    } else {
+      this.player.setSize('100%', '100%');
+      this.player.loadPlaylist({
+        listType: 'playlist',
+        list: playlistId,
+      });
+    }
+  }
+
+  private onYouTubePlayerReady(event: any): void {
+    if (event?.target?.setSize) {
+      event.target.setSize('100%', '100%');
+    }
+  }
+
+  private extractPlaylistId(url: string): string | null {
+    try {
+      const urlObj = new URL(url);
+      if (urlObj.searchParams.has('list')) {
+        return urlObj.searchParams.get('list');
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  private onYouTubeStateChange(event: any): void {
+    const timerType = this.timer.getCurrentType();
+    const state = event.data;
+
+    // YT.PlayerState
+    const PLAYER_STATE = {
+      BUFFERING: 3,
+      PLAYING: 1,
+      PAUSED: 2,
+      ENDED: 0,
+    };
+
+    if (timerType === 'work' && state === PLAYER_STATE.PLAYING) {
+      // Player is playing during work session - this is fine
+    } else if (timerType !== 'work' || state === PLAYER_STATE.PAUSED || state === PLAYER_STATE.ENDED) {
+      // If not work session, or paused/ended, ensure it's paused
+      // Note: We don't want to fight the user if they manually pause, 
+      // but the requirement says: "When the timer is paused, stopped, or a break timer is running, the player will stop."
+      // Actually, "the player will stop" usually means pause or stop.
+      if (this.player && typeof this.player.pauseVideo === 'function') {
+        this.player.pauseVideo();
+      }
+    }
+  }
+
+  // This needs to be called from onStateChange in the timer
+  // Wait, the requirement says: 
+  // "In onStateChange, if the state is running and the timer type is work, call player.playVideo()."
+  // "If the state is paused, idle, or the type is not work, call player.pauseVideo()."
+
+  // I'll modify the existing onStateChange to handle this.
+  // But I need to ensure it's called.
 
   private startTimer(type: TimerType): void {
     if (type === 'work') {
@@ -125,20 +269,62 @@ class TomatoMasterApp {
     }
     this.timer.start(type);
     this.updateTimerButtons(type);
+
+    // Sync YouTube
+    this.syncYouTubeWithTimer(type, 'running');
   }
 
   private togglePause(): void {
     const state = this.timer.getState();
     if (state === 'running') {
       this.timer.pause();
+      this.syncYouTubeWithTimer(this.timer.getCurrentType()!, 'paused');
     } else if (state === 'paused') {
       this.timer.resume();
+      this.syncYouTubeWithTimer(this.timer.getCurrentType()!, 'running');
     }
   }
 
   private cancelTimer(): void {
     this._timerCancelledByUser = true;
     this.timer.cancel();
+    this.syncYouTubeWithTimer(this.timer.getCurrentType()!, 'idle');
+  }
+
+  private syncYouTubeWithTimer(type: TimerType, timerState: string): void {
+    if (!this.player || typeof this.player.playVideo !== 'function' || typeof this.player.pauseVideo !== 'function') {
+      return;
+    }
+
+    if (type === 'work' && timerState === 'running') {
+      this.player.playVideo();
+    } else {
+      this.player.pauseVideo();
+    }
+  }
+
+  private onTimerComplete(type: TimerType): void {
+    const cancelled = this._timerCancelledByUser;
+    this._timerCancelledByUser = false;
+
+    // Sync YouTube before notification/modal
+    this.syncYouTubeWithTimer(type, 'idle');
+
+    if (!cancelled) {
+      this.notificationService.playAlarm();
+      const notifyMessages: Record<TimerType, { title: string; body: string }> = {
+        'work': { title: 'Work Session Complete!', body: 'Great work! Time for a break.' },
+        'short-break': { title: 'Break Complete!', body: 'Ready to get back to work?' },
+        'long-break': { title: 'Long Break Complete!', body: 'Ready to get back to work?' },
+      };
+      const { title, body } = notifyMessages[type];
+      this.notificationService.notify(title, body);
+    }
+
+    if (type === 'work') {
+      const title = cancelled ? 'Session Cancelled' : 'Work Session Complete!';
+      this.showNoteModal(title);
+    }
   }
 
   private addTask(): void {
@@ -167,27 +353,6 @@ class TomatoMasterApp {
   private onTick(remaining: number): void {
     this.timerDisplay.textContent = this.timer.formatTime(remaining);
     this.updateRingProgress(remaining);
-  }
-
-  private onTimerComplete(type: TimerType): void {
-    const cancelled = this._timerCancelledByUser;
-    this._timerCancelledByUser = false;
-
-    if (!cancelled) {
-      this.notificationService.playAlarm();
-      const notifyMessages: Record<TimerType, { title: string; body: string }> = {
-        'work': { title: 'Work Session Complete!', body: 'Great work! Time for a break.' },
-        'short-break': { title: 'Break Complete!', body: 'Ready to get back to work?' },
-        'long-break': { title: 'Long Break Complete!', body: 'Ready to get back to work?' },
-      };
-      const { title, body } = notifyMessages[type];
-      this.notificationService.notify(title, body);
-    }
-
-    if (type === 'work') {
-      const title = cancelled ? 'Session Cancelled' : 'Work Session Complete!';
-      this.showNoteModal(title);
-    }
   }
 
   private onStateChange(state: TimerState, type: TimerType | null): void {

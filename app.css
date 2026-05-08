@@ -531,6 +531,40 @@ body[data-timer-type="long-break"] .ring-progress {
 }
 
 /* ===========================
+   YouTube Card
+=========================== */
+.youtube-card {
+  margin-top: 20px;
+  overflow: hidden;
+}
+
+.youtube-input-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+.youtube-player-container {
+  display: block;
+  width: 100%;
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: #000;
+}
+
+#youtube-player-container iframe {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  border: 0;
+}
+
+/* ===========================
    Task List
 =========================== */
 .tasks-card {
