@@ -420,7 +420,6 @@ body[data-timer-type="long-break"] .ring-progress {
 .btn-fab:hover {
   background: var(--primary-dark);
   box-shadow: var(--shadow-md);
-  transform: rotate(90deg);
 }
 
 /* ===========================

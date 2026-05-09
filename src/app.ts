@@ -134,7 +134,14 @@ class TomatoMasterApp {
       }
     });
 
-    this.loadPlaylistBtn.addEventListener('click', () => this.handlePlaylistUrlSubmit());
+    this.loadPlaylistBtn.addEventListener('click', () => {
+      const icon = this.loadPlaylistBtn.querySelector('.material-icons')!;
+      if (icon.textContent === 'close') {
+        this.clearPlaylist();
+      } else {
+        this.handlePlaylistUrlSubmit();
+      }
+    });
 
     document.getElementById('btn-test-notifications')?.addEventListener('click', () => {
       this.notificationService.playAlarm();
@@ -156,6 +163,7 @@ class TomatoMasterApp {
     const savedUrl = localStorage.getItem('youtube-playlist-url');
     if (savedUrl) {
       this.youtubeUrlInput.value = savedUrl;
+      this.updatePlaylistButton(true);
       this.handlePlaylistUrlSubmit(savedUrl);
     }
   }
@@ -182,6 +190,7 @@ class TomatoMasterApp {
     this.youtubeCard.classList.remove('hidden');
     this.youtubePlayerContainer.classList.remove('hidden');
     localStorage.setItem('youtube-playlist-url', inputUrl);
+    this.updatePlaylistButton(true);
 
     if (!this.youtubeApiReady || !window.YT || typeof window.YT.Player !== 'function') {
       this.pendingYouTubePlaylistUrl = inputUrl;
@@ -227,6 +236,33 @@ class TomatoMasterApp {
     } catch {
       return null;
     }
+  }
+
+  private updatePlaylistButton(loaded: boolean): void {
+    const icon = this.loadPlaylistBtn.querySelector('.material-icons')!;
+    if (loaded) {
+      icon.textContent = 'close';
+      this.loadPlaylistBtn.setAttribute('aria-label', 'Remove playlist');
+    } else {
+      icon.textContent = 'playlist_add';
+      this.loadPlaylistBtn.setAttribute('aria-label', 'Load playlist');
+    }
+  }
+
+  private clearPlaylist(): void {
+    if (this.player) {
+      this.player.destroy();
+      this.player = null;
+    }
+    const container = document.getElementById('youtube-player-container') as HTMLElement;
+    container.innerHTML = '';
+
+    this.youtubePlayerContainer.classList.add('hidden');
+
+    localStorage.removeItem('youtube-playlist-url');
+    this.youtubeUrlInput.value = '';
+
+    this.updatePlaylistButton(false);
   }
 
   private onYouTubeStateChange(event: any): void {
