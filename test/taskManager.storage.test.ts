@@ -127,4 +127,38 @@ describe('TaskManager - storage persistence', () => {
       expect(manager.getTasks()).to.have.length(1);
     });
   });
+
+  describe('custom storageKey', () => {
+    it('should write to the custom key instead of the default key', () => {
+      const storage = makeStorage();
+      const manager = new TaskManager({ onTasksChanged, storage, storageKey: 'custom:key' });
+      manager.addTask('Side quest');
+      expect(storage.getItem('custom:key')).to.not.be.null;
+      expect(storage.getItem(STORAGE_KEY)).to.be.null;
+    });
+
+    it('should load from the custom key on construction', () => {
+      const storage = makeStorage();
+      const m1 = new TaskManager({ onTasksChanged, storage, storageKey: 'custom:key' });
+      m1.addTask('Persisted side quest');
+
+      const m2 = new TaskManager({ onTasksChanged: sinon.spy(), storage, storageKey: 'custom:key' });
+      const tasks = m2.getTasks();
+      expect(tasks).to.have.length(1);
+      expect(tasks[0].text).to.equal('Persisted side quest');
+    });
+
+    it('should keep two managers with different keys isolated', () => {
+      const storage = makeStorage();
+      const m1 = new TaskManager({ onTasksChanged, storage, storageKey: 'ns:tasks' });
+      const m2 = new TaskManager({ onTasksChanged: sinon.spy(), storage, storageKey: 'ns:side-quests' });
+      m1.addTask('Work task');
+      m2.addTask('Side quest');
+
+      const reloaded1 = new TaskManager({ onTasksChanged: sinon.spy(), storage, storageKey: 'ns:tasks' });
+      const reloaded2 = new TaskManager({ onTasksChanged: sinon.spy(), storage, storageKey: 'ns:side-quests' });
+      expect(reloaded1.getTasks().map(t => t.text)).to.deep.equal(['Work task']);
+      expect(reloaded2.getTasks().map(t => t.text)).to.deep.equal(['Side quest']);
+    });
+  });
 });

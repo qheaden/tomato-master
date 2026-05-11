@@ -13,6 +13,7 @@ export interface TaskStorage {
 export interface TaskManagerConfig {
   onTasksChanged: (tasks: Task[], activeTask: Task | null) => void;
   storage?: TaskStorage;
+  storageKey?: string;
 }
 
 interface PersistedTaskState {
@@ -29,16 +30,18 @@ export class TaskManager {
   private config: TaskManagerConfig;
   private nextId: number = 1;
   private storage: TaskStorage | null;
+  private storageKey: string;
 
   constructor(config: TaskManagerConfig) {
     this.config = config;
     this.storage = config.storage ?? null;
+    this.storageKey = config.storageKey ?? STORAGE_KEY;
     this.loadFromStorage();
   }
 
   private loadFromStorage(): void {
     if (!this.storage) return;
-    const raw = this.storage.getItem(STORAGE_KEY);
+    const raw = this.storage.getItem(this.storageKey);
     if (!raw) return;
     try {
       const state: PersistedTaskState = JSON.parse(raw);
@@ -57,7 +60,7 @@ export class TaskManager {
       activeTaskId: this.activeTaskId,
       nextId: this.nextId,
     };
-    this.storage.setItem(STORAGE_KEY, JSON.stringify(state));
+    this.storage.setItem(this.storageKey, JSON.stringify(state));
   }
 
   addTask(text: string): Task {

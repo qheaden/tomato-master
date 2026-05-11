@@ -14,6 +14,7 @@ declare global {
 class TomatoMasterApp {
   private timer: PomodoroTimer;
   private taskManager: TaskManager;
+  private sideQuestManager: TaskManager;
   private noteManager: NoteManager;
   private notificationService: NotificationService;
   private _timerCancelledByUser = false;
@@ -33,6 +34,13 @@ class TomatoMasterApp {
   private addTaskBtn!: HTMLButtonElement;
   private taskList!: HTMLElement;
   private activeTaskDisplay!: HTMLElement;
+
+  // Side Quest UI elements
+  private sideQuestInput!: HTMLInputElement;
+  private addSideQuestBtn!: HTMLButtonElement;
+  private sideQuestList!: HTMLElement;
+  private activeSideQuestDisplay!: HTMLElement;
+  private sideQuestCard!: HTMLElement;
 
   // Note UI elements
   private noteModal!: HTMLElement;
@@ -65,6 +73,12 @@ class TomatoMasterApp {
       storage: localStorage,
     });
 
+    this.sideQuestManager = new TaskManager({
+      onTasksChanged: (tasks, active) => this.renderSideQuests(tasks, active),
+      storage: localStorage,
+      storageKey: 'tomato-master:side-quests',
+    });
+
     this.noteManager = new NoteManager({
       onNoteSet: (note) => this.renderNote(note),
       onNoteRequested: () => { /* handled directly via showNoteModal */ },
@@ -80,6 +94,7 @@ class TomatoMasterApp {
     this.resetTimerDisplay();
     this.notificationService.requestPermission();
     this.renderTasks(this.taskManager.getTasks(), this.taskManager.getActiveTask());
+    this.renderSideQuests(this.sideQuestManager.getTasks(), this.sideQuestManager.getActiveTask());
     this.renderNote(this.noteManager.getCurrentNote());
 
     this.initYouTube();
@@ -99,6 +114,12 @@ class TomatoMasterApp {
     this.addTaskBtn = document.getElementById('btn-add-task') as HTMLButtonElement;
     this.taskList = document.getElementById('task-list')!;
     this.activeTaskDisplay = document.getElementById('active-task-display')!;
+
+    this.sideQuestInput = document.getElementById('side-quest-input') as HTMLInputElement;
+    this.addSideQuestBtn = document.getElementById('btn-add-side-quest') as HTMLButtonElement;
+    this.sideQuestList = document.getElementById('side-quest-list')!;
+    this.activeSideQuestDisplay = document.getElementById('active-side-quest-display')!;
+    this.sideQuestCard = document.getElementById('side-quest-card')!;
 
     this.noteModal = document.getElementById('note-modal')!;
     this.noteTextarea = document.getElementById('note-textarea') as HTMLTextAreaElement;
@@ -123,6 +144,11 @@ class TomatoMasterApp {
     this.addTaskBtn.addEventListener('click', () => this.addTask());
     this.taskInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') this.addTask();
+    });
+
+    this.addSideQuestBtn.addEventListener('click', () => this.addSideQuest());
+    this.sideQuestInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') this.addSideQuest();
     });
 
     this.noteSaveBtn.addEventListener('click', () => this.saveNote());
@@ -375,6 +401,68 @@ class TomatoMasterApp {
     }
   }
 
+  private addSideQuest(): void {
+    const text = this.sideQuestInput.value.trim();
+    if (!text) return;
+    try {
+      this.sideQuestManager.addTask(text);
+      this.sideQuestInput.value = '';
+      this.sideQuestInput.focus();
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  private renderSideQuests(tasks: Task[], activeTask: Task | null): void {
+    this.sideQuestList.innerHTML = '';
+
+    if (tasks.length === 0) {
+      this.sideQuestList.innerHTML = '<li class="task-empty">No side quests yet. Add one above!</li>';
+    } else {
+      tasks.forEach(task => {
+        const li = document.createElement('li');
+        li.className = `task-item${task.completed ? ' completed' : ''}${task.id === activeTask?.id ? ' active-task' : ''}`;
+        li.dataset.id = task.id;
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = task.completed;
+        checkbox.className = 'task-checkbox';
+        checkbox.setAttribute('aria-label', `Mark "${task.text}" as complete`);
+        if (!task.completed) {
+          checkbox.addEventListener('change', () => this.sideQuestManager.completeTask(task.id));
+        }
+
+        const span = document.createElement('span');
+        span.className = 'task-text';
+        span.textContent = task.text;
+        if (!task.completed) {
+          span.addEventListener('click', () => this.sideQuestManager.setActiveTask(task.id));
+          span.title = 'Click to set as active side quest';
+        }
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'task-delete-btn';
+        deleteBtn.innerHTML = '<span class="material-icons">delete</span>';
+        deleteBtn.setAttribute('aria-label', `Delete side quest "${task.text}"`);
+        deleteBtn.addEventListener('click', () => this.sideQuestManager.deleteTask(task.id));
+
+        li.appendChild(checkbox);
+        li.appendChild(span);
+        li.appendChild(deleteBtn);
+        this.sideQuestList.appendChild(li);
+      });
+    }
+
+    if (activeTask) {
+      this.activeSideQuestDisplay.textContent = activeTask.text;
+      this.activeSideQuestDisplay.parentElement?.parentElement?.classList.remove('hidden');
+    } else {
+      this.activeSideQuestDisplay.textContent = '';
+      this.activeSideQuestDisplay.parentElement?.parentElement?.classList.add('hidden');
+    }
+  }
+
   private saveNote(): void {
     const text = this.noteTextarea.value;
     this.noteManager.saveNote(text);
@@ -428,6 +516,9 @@ class TomatoMasterApp {
     }
 
     this.updateTimerButtons(type);
+
+    const workRunning = state === 'running' && type === 'work';
+    this.sideQuestCard.classList.toggle('sq-disabled', workRunning);
   }
 
   private updateTimerButtons(activeType: TimerType | null): void {

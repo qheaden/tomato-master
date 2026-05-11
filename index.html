@@ -41,6 +41,15 @@
       </div>
     </div>
 
+    <!-- Active Side Quest Banner -->
+    <div class="active-side-quest-wrapper hidden">
+      <div class="active-side-quest-banner">
+        <span class="material-icons">explore</span>
+        <p class="active-side-quest-label">Break plan:</p>
+        <p id="active-side-quest-display" class="active-side-quest-text"></p>
+      </div>
+    </div>
+
     <!-- Timer Card -->
     <div id="timer-card" class="card timer-card">
       <div class="timer-ring-wrapper">
@@ -105,6 +114,30 @@
       </div>
       <ul id="task-list" class="task-list" aria-label="Tasks">
         <li class="task-empty">No tasks yet. Add one above!</li>
+      </ul>
+    </div>
+
+    <!-- Side Quests Card -->
+    <div id="side-quest-card" class="card side-quests-card">
+      <h2 class="card-title">
+        <span class="material-icons">checklist</span>
+        Side Quests
+      </h2>
+      <div class="task-input-row">
+        <input
+          type="text"
+          id="side-quest-input"
+          class="task-input sq-task-input"
+          placeholder="Add a side quest..."
+          aria-label="New side quest"
+          maxlength="200"
+        />
+        <button id="btn-add-side-quest" class="btn btn-fab sq-btn-fab" aria-label="Add side quest">
+          <span class="material-icons">add</span>
+        </button>
+      </div>
+      <ul id="side-quest-list" class="task-list" aria-label="Side Quests">
+        <li class="task-empty">No side quests yet. Add one above!</li>
       </ul>
     </div>
 
