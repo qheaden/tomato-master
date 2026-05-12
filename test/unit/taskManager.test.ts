@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { TaskManager, Task } from '../src/taskManager';
+import { TaskManager, Task } from '../../src/taskManager';
 
 describe('TaskManager', () => {
   let onTasksChanged: sinon.SinonSpy;

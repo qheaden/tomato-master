@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { NoteManager, NoteStorage } from '../src/noteManager';
+import { NoteManager, NoteStorage } from '../../src/noteManager';
 
 function makeStorage(initial: Record<string, string> = {}): NoteStorage {
   const store: Record<string, string> = { ...initial };

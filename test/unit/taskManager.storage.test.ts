@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { TaskManager, TaskStorage } from '../src/taskManager';
+import { TaskManager, TaskStorage } from '../../src/taskManager';
 
 function makeStorage(initial: Record<string, string> = {}): TaskStorage {
   const store: Record<string, string> = { ...initial };

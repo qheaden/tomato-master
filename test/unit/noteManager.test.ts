@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { NoteManager, Note } from '../src/noteManager';
+import { NoteManager, Note } from '../../src/noteManager';
 
 describe('NoteManager', () => {
   let onNoteSet: sinon.SinonSpy;

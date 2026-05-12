@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { PomodoroTimer, TimerType, TimerState, TIMER_DURATIONS } from '../src/timer';
+import { PomodoroTimer, TimerType, TimerState, TIMER_DURATIONS } from '../../src/timer';
 
 describe('PomodoroTimer', () => {
   let tickSpy: sinon.SinonSpy;

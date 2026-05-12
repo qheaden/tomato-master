@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { NotificationService, NotificationConstructor } from '../src/notificationService';
+import { NotificationService, NotificationConstructor } from '../../src/notificationService';
 
 // Minimal mock types for AudioContext nodes
 interface MockAudioParam {
