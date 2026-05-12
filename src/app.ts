@@ -2,6 +2,7 @@ import { PomodoroTimer, TimerType, TimerState } from './timer';
 import { TaskManager, Task } from './taskManager';
 import { NoteManager, Note } from './noteManager';
 import { NotificationService } from './notificationService';
+import { YouTubePlaybackState } from './youtubePlaybackState';
 
 // Declare YouTube API types to avoid TypeScript errors
 declare global {
@@ -57,6 +58,9 @@ class TomatoMasterApp {
   private youtubeApiReady = false;
   private pendingYouTubePlaylistUrl: string | null = null;
   private player!: any;
+  private playbackState = new YouTubePlaybackState(localStorage);
+  private playbackTrackingInterval: ReturnType<typeof setInterval> | null = null;
+  private pendingRestorePosition: number | null = null;
 
   // Ring animation constants
   private readonly RING_CIRCUMFERENCE = 2 * Math.PI * 120;
@@ -178,6 +182,10 @@ class TomatoMasterApp {
     (window as any).onYouTubeIframeAPIReady = () => {
       this.onYouTubeIframeAPIReady();
     };
+
+    window.addEventListener('beforeunload', () => {
+      this.savePlaybackState();
+    });
   }
 
   private initYouTube(): void {
@@ -206,6 +214,11 @@ class TomatoMasterApp {
   private handlePlaylistUrlSubmit(url?: string): void {
     const inputUrl = url || this.youtubeUrlInput.value.trim();
     if (!inputUrl) return;
+
+    if (!url) {
+      // User-initiated load: clear saved position so we start fresh
+      this.playbackState.clear();
+    }
 
     const playlistId = this.extractPlaylistId(inputUrl);
     if (!playlistId) {
@@ -250,6 +263,12 @@ class TomatoMasterApp {
     if (event?.target?.setSize) {
       event.target.setSize('100%', '100%');
     }
+
+    const saved = this.playbackState.load();
+    if (saved) {
+      this.pendingRestorePosition = saved.position;
+      event.target.playVideoAt(saved.index);
+    }
   }
 
   private extractPlaylistId(url: string): string | null {
@@ -286,6 +305,8 @@ class TomatoMasterApp {
     this.youtubePlayerContainer.classList.add('hidden');
 
     localStorage.removeItem('youtube-playlist-url');
+    this.playbackState.clear();
+    this.stopTrackingPlayback();
     this.youtubeUrlInput.value = '';
 
     this.updatePlaylistButton(false);
@@ -303,26 +324,52 @@ class TomatoMasterApp {
       ENDED: 0,
     };
 
+    // Restore seek position after navigating to the saved playlist index
+    if (state === PLAYER_STATE.PLAYING && this.pendingRestorePosition !== null) {
+      const position = this.pendingRestorePosition;
+      this.pendingRestorePosition = null;
+      event.target.seekTo(position, true);
+      event.target.pauseVideo();
+      return;
+    }
+
+    if (state === PLAYER_STATE.PLAYING) {
+      this.startTrackingPlayback();
+    } else {
+      this.stopTrackingPlayback();
+    }
+
     if (timerType === 'work' && state === PLAYER_STATE.PLAYING) {
       // Player is playing during work session - this is fine
     } else if (timerType !== 'work' || state === PLAYER_STATE.PAUSED || state === PLAYER_STATE.ENDED) {
-      // If not work session, or paused/ended, ensure it's paused
-      // Note: We don't want to fight the user if they manually pause, 
-      // but the requirement says: "When the timer is paused, stopped, or a break timer is running, the player will stop."
-      // Actually, "the player will stop" usually means pause or stop.
       if (this.player && typeof this.player.pauseVideo === 'function') {
         this.player.pauseVideo();
       }
     }
   }
 
-  // This needs to be called from onStateChange in the timer
-  // Wait, the requirement says: 
-  // "In onStateChange, if the state is running and the timer type is work, call player.playVideo()."
-  // "If the state is paused, idle, or the type is not work, call player.pauseVideo()."
+  private savePlaybackState(): void {
+    if (!this.player || typeof this.player.getCurrentTime !== 'function' || typeof this.player.getPlaylistIndex !== 'function') {
+      return;
+    }
+    const index = this.player.getPlaylistIndex();
+    const position = this.player.getCurrentTime();
+    if (index >= 0) {
+      this.playbackState.save(index, position);
+    }
+  }
 
-  // I'll modify the existing onStateChange to handle this.
-  // But I need to ensure it's called.
+  private startTrackingPlayback(): void {
+    if (this.playbackTrackingInterval !== null) return;
+    this.playbackTrackingInterval = setInterval(() => this.savePlaybackState(), 5000);
+  }
+
+  private stopTrackingPlayback(): void {
+    if (this.playbackTrackingInterval === null) return;
+    clearInterval(this.playbackTrackingInterval);
+    this.playbackTrackingInterval = null;
+    this.savePlaybackState();
+  }
 
   private startTimer(type: TimerType): void {
     if (type === 'work') {
