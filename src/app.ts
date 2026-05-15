@@ -61,6 +61,7 @@ class TomatoMasterApp {
   private playbackState = new YouTubePlaybackState(localStorage);
   private playbackTrackingInterval: ReturnType<typeof setInterval> | null = null;
   private pendingRestorePosition: number | null = null;
+  private youtubePlayerContainer!: HTMLElement;
 
   // Ring animation constants
   private readonly RING_CIRCUMFERENCE = 2 * Math.PI * 120;
@@ -271,6 +272,40 @@ class TomatoMasterApp {
     }
   }
 
+  private onYouTubeStateChange(event: any): void {
+    const timerType = this.timer.getCurrentType();
+    const state = event.data;
+
+    // YT.PlayerState
+    const PLAYER_STATE = {
+      BUFFERING: 3,
+      PLAYING: 1,
+      PAUSED: 2,
+      ENDED: 0,
+    };
+
+    // Restore seek position after navigating to the saved playlist index IF the player is playing or about to play
+    if (this.pendingRestorePosition !== null && state === PLAYER_STATE.PLAYING) {
+      event.target.seekTo(this.pendingRestorePosition, true);
+      this.pendingRestorePosition = null; // Clear after seeking
+      // Do not pauseVideo here, let it continue playing if timer is active
+    }
+
+    if (state === PLAYER_STATE.PLAYING) {
+      this.startTrackingPlayback();
+    } else {
+      this.stopTrackingPlayback();
+    }
+
+    if (timerType === 'work' && state === PLAYER_STATE.PLAYING) {
+      // Player is playing during work session - this is fine
+    } else if (timerType !== 'work' || state === PLAYER_STATE.PAUSED || state === PLAYER_STATE.ENDED) {
+      if (this.player && typeof this.player.pauseVideo === 'function') {
+        this.player.pauseVideo();
+      }
+    }
+  }
+
   private extractPlaylistId(url: string): string | null {
     try {
       const urlObj = new URL(url);
@@ -299,8 +334,11 @@ class TomatoMasterApp {
       this.player.destroy();
       this.player = null;
     }
+    // Ensure container is cleared if player is destroyed
     const container = document.getElementById('youtube-player-container') as HTMLElement;
-    container.innerHTML = '';
+    if (container) {
+      container.innerHTML = '';
+    }
 
     this.youtubePlayerContainer.classList.add('hidden');
 
@@ -310,42 +348,6 @@ class TomatoMasterApp {
     this.youtubeUrlInput.value = '';
 
     this.updatePlaylistButton(false);
-  }
-
-  private onYouTubeStateChange(event: any): void {
-    const timerType = this.timer.getCurrentType();
-    const state = event.data;
-
-    // YT.PlayerState
-    const PLAYER_STATE = {
-      BUFFERING: 3,
-      PLAYING: 1,
-      PAUSED: 2,
-      ENDED: 0,
-    };
-
-    // Restore seek position after navigating to the saved playlist index
-    if (state === PLAYER_STATE.PLAYING && this.pendingRestorePosition !== null) {
-      const position = this.pendingRestorePosition;
-      this.pendingRestorePosition = null;
-      event.target.seekTo(position, true);
-      event.target.pauseVideo();
-      return;
-    }
-
-    if (state === PLAYER_STATE.PLAYING) {
-      this.startTrackingPlayback();
-    } else {
-      this.stopTrackingPlayback();
-    }
-
-    if (timerType === 'work' && state === PLAYER_STATE.PLAYING) {
-      // Player is playing during work session - this is fine
-    } else if (timerType !== 'work' || state === PLAYER_STATE.PAUSED || state === PLAYER_STATE.ENDED) {
-      if (this.player && typeof this.player.pauseVideo === 'function') {
-        this.player.pauseVideo();
-      }
-    }
   }
 
   private savePlaybackState(): void {

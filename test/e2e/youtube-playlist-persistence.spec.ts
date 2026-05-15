@@ -328,6 +328,36 @@ test.describe('YouTube playlist position persistence', () => {
   });
 
   // -------------------------------------------------------------------------
+  // Scenario 5b – Video plays when work timer starts after restore
+  // -------------------------------------------------------------------------
+  test('video plays when work timer starts after restore from localStorage', async ({ page }) => {
+    // Pre-seed localStorage with a saved position
+    await page.addInitScript(() => {
+      localStorage.setItem('youtube-playlist-url', 'https://www.youtube.com/playlist?list=PLbpi6ZahtOH6Ar_3GPy3workBL3Wr7TRf');
+      localStorage.setItem('youtube-playlist-index', '0'); // Start with the first video
+      localStorage.setItem('youtube-playlist-position', '10'); // Seek to 10 seconds
+    });
+
+    await injectMockYouTubeAPI(page);
+    await gotoAndReadyAPI(page);
+
+    // The app should have loaded the saved URL and called playVideoAt for index 0
+    const callsAfterRestore: string[] = await page.evaluate(() => (window as any).__mockPlayerState?.calls ?? []);
+    expect(callsAfterRestore).toContain('playVideoAt:0');
+    expect(callsAfterRestore).toContain('seekTo:10'); // The seekTo might be called by the player API or by our logic
+
+    // Clear calls log to focus on what happens after timer start
+    await page.evaluate(() => { (window as any).__mockPlayerState.calls = []; });
+
+    // Start the work timer
+    await page.click('#btn-work');
+    await page.waitForTimeout(100); // Give it a moment to process
+
+    const callsAfterTimerStart: string[] = await page.evaluate(() => (window as any).__mockPlayerState?.calls ?? []);
+    expect(callsAfterTimerStart).toContain('playVideo'); // This is the crucial check: playVideo should be called
+  });
+
+  // -------------------------------------------------------------------------
   // Extra – Player container becomes visible after loading a playlist
   // -------------------------------------------------------------------------
   test('player container is visible after loading a playlist URL', async ({ page }) => {
