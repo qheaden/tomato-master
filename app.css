@@ -53,6 +53,10 @@ body[data-theme='dark'] {
   --outline-light: #4e4341;
 }
 
+body[data-theme='dark'] .side-quests-card .task-item.active-task .task-text {
+  color: var(--sq-primary-dark);
+}
+
 /* ===========================
    Reset & Base
 =========================== */
