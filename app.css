@@ -42,6 +42,17 @@
   --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+body[data-theme='dark'] {
+  --primary-surface: #221b1a;
+  --primary-container: #4c2a26;
+  --surface: #2b2524;
+  --surface-variant: #342e2d;
+  --on-surface: #f2e9e7;
+  --on-surface-variant: #d2c2bf;
+  --outline: #5e504e;
+  --outline-light: #4e4341;
+}
+
 /* ===========================
    Reset & Base
 =========================== */
@@ -944,10 +955,17 @@ body[data-timer-type="long-break"] .ring-progress {
 /* ===========================
    Test Notifications Button
 =========================== */
-.btn-test-notifications {
+.utility-controls {
   position: fixed;
   bottom: 20px;
   left: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 100;
+}
+
+.btn-test-notifications {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -962,7 +980,6 @@ body[data-timer-type="long-break"] .ring-progress {
   cursor: pointer;
   box-shadow: var(--shadow-sm);
   transition: background var(--transition), box-shadow var(--transition);
-  z-index: 100;
 }
 
 .btn-test-notifications .material-icons {
@@ -976,4 +993,31 @@ body[data-timer-type="long-break"] .ring-progress {
 
 .btn-test-notifications:active {
   background: var(--outline-light);
+}
+
+.theme-switcher {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--outline);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-option {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.theme-option:hover {
+  background: var(--surface-variant);
+}
+
+.theme-option.active {
+  background: var(--primary-container);
 }

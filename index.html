@@ -188,10 +188,17 @@
     </div>
   </div>
 
-  <button id="btn-test-notifications" class="btn-test-notifications" aria-label="Test notifications">
-    <span class="material-icons">notifications_active</span>
-    Test Notifications
-  </button>
+  <div class="utility-controls" aria-label="Utility controls">
+    <button id="btn-test-notifications" class="btn-test-notifications" aria-label="Test notifications">
+      <span class="material-icons">notifications_active</span>
+      Test Notifications
+    </button>
+    <div class="theme-switcher" role="group" aria-label="Theme selector">
+      <button id="theme-system" class="theme-option" title="Use system theme preference" aria-label="System theme">🖥️</button>
+      <button id="theme-light" class="theme-option" title="Use light theme" aria-label="Light theme">☀️</button>
+      <button id="theme-dark" class="theme-option" title="Use dark theme" aria-label="Dark theme">🌙</button>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>

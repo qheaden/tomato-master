@@ -3,6 +3,7 @@ import { TaskManager, Task } from './taskManager';
 import { NoteManager, Note } from './noteManager';
 import { NotificationService } from './notificationService';
 import { YouTubePlaybackState } from './youtubePlaybackState';
+import { getEffectiveTheme, loadThemePreference, saveThemePreference, ThemePreference } from './themePreference';
 
 // Declare YouTube API types to avoid TypeScript errors
 declare global {
@@ -62,6 +63,8 @@ class TomatoMasterApp {
   private playbackTrackingInterval: ReturnType<typeof setInterval> | null = null;
   private pendingRestorePosition: number | null = null;
   private youtubePlayerContainer!: HTMLElement;
+  private themePreference: ThemePreference = 'system';
+  private mediaQueryList: MediaQueryList | null = null;
 
   // Ring animation constants
   private readonly RING_CIRCUMFERENCE = 2 * Math.PI * 120;
@@ -101,6 +104,7 @@ class TomatoMasterApp {
     this.renderTasks(this.taskManager.getTasks(), this.taskManager.getActiveTask());
     this.renderSideQuests(this.sideQuestManager.getTasks(), this.sideQuestManager.getActiveTask());
     this.renderNote(this.noteManager.getCurrentNote());
+    this.initTheme();
 
     this.initYouTube();
   }
@@ -178,6 +182,9 @@ class TomatoMasterApp {
       this.notificationService.playAlarm();
       this.notificationService.notify('Work Session Complete!', 'Great work! Time for a break.');
     });
+    document.getElementById('theme-system')?.addEventListener('click', () => this.setThemePreference('system'));
+    document.getElementById('theme-light')?.addEventListener('click', () => this.setThemePreference('light'));
+    document.getElementById('theme-dark')?.addEventListener('click', () => this.setThemePreference('dark'));
 
     // Setup global YouTube callback
     (window as any).onYouTubeIframeAPIReady = () => {
@@ -186,6 +193,39 @@ class TomatoMasterApp {
 
     window.addEventListener('beforeunload', () => {
       this.savePlaybackState();
+    });
+  }
+
+  private initTheme(): void {
+    this.themePreference = loadThemePreference(localStorage);
+    this.mediaQueryList = window.matchMedia('(prefers-color-scheme: dark)');
+    this.mediaQueryList.addEventListener('change', () => this.applyTheme());
+    this.applyTheme();
+    this.updateThemeButtons();
+  }
+
+  private setThemePreference(preference: ThemePreference): void {
+    this.themePreference = preference;
+    saveThemePreference(localStorage, preference);
+    this.applyTheme();
+    this.updateThemeButtons();
+  }
+
+  private applyTheme(): void {
+    const isDark = this.mediaQueryList ? this.mediaQueryList.matches : false;
+    const theme = getEffectiveTheme(this.themePreference, isDark);
+    document.body.setAttribute('data-theme', theme);
+  }
+
+  private updateThemeButtons(): void {
+    const buttons: Record<ThemePreference, HTMLElement | null> = {
+      system: document.getElementById('theme-system'),
+      light: document.getElementById('theme-light'),
+      dark: document.getElementById('theme-dark'),
+    };
+
+    (Object.keys(buttons) as ThemePreference[]).forEach((key) => {
+      buttons[key]?.classList.toggle('active', key === this.themePreference);
     });
   }
 
