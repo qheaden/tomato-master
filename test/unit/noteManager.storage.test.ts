@@ -1,28 +1,29 @@
-import { expect } from 'chai';
-import sinon from 'sinon';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NoteManager, NoteStorage } from '../../src/noteManager';
 
 function makeStorage(initial: Record<string, string> = {}): NoteStorage {
   const store: Record<string, string> = { ...initial };
   return {
     getItem: (key: string) => store[key] ?? null,
-    setItem: (key: string, value: string) => { store[key] = value; },
+    setItem: (key: string, value: string) => {
+      store[key] = value;
+    },
   };
 }
 
 const STORAGE_KEY = 'tomato-master:note';
 
 describe('NoteManager - storage persistence', () => {
-  let onNoteSet: sinon.SinonSpy;
-  let onNoteRequested: sinon.SinonSpy;
+  let onNoteSet: ReturnType<typeof vi.fn>;
+  let onNoteRequested: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    onNoteSet = sinon.spy();
-    onNoteRequested = sinon.spy();
+    onNoteSet = vi.fn();
+    onNoteRequested = vi.fn();
   });
 
   afterEach(() => {
-    sinon.restore();
+    vi.restoreAllMocks();
   });
 
   describe('saving to storage', () => {
@@ -31,9 +32,9 @@ describe('NoteManager - storage persistence', () => {
       const manager = new NoteManager({ onNoteSet, onNoteRequested, storage });
       manager.saveNote('Working on auth');
       const raw = storage.getItem(STORAGE_KEY);
-      expect(raw).to.not.be.null;
+      expect(raw).not.toBeNull();
       const note = JSON.parse(raw!);
-      expect(note.text).to.equal('Working on auth');
+      expect(note.text).toBe('Working on auth');
     });
 
     it('should clear storage when saveNote is called with empty text', () => {
@@ -42,7 +43,7 @@ describe('NoteManager - storage persistence', () => {
       manager.saveNote('Some note');
       manager.saveNote('');
       const raw = storage.getItem(STORAGE_KEY);
-      expect(raw).to.equal('');
+      expect(raw).toBe('');
     });
 
     it('should clear storage when clearNote is called', () => {
@@ -51,7 +52,7 @@ describe('NoteManager - storage persistence', () => {
       manager.saveNote('Some note');
       manager.clearNote();
       const raw = storage.getItem(STORAGE_KEY);
-      expect(raw).to.equal('');
+      expect(raw).toBe('');
     });
   });
 
@@ -61,10 +62,10 @@ describe('NoteManager - storage persistence', () => {
       const manager1 = new NoteManager({ onNoteSet, onNoteRequested, storage });
       manager1.saveNote('Persisted context');
 
-      const manager2 = new NoteManager({ onNoteSet: sinon.spy(), onNoteRequested: sinon.spy(), storage });
+      const manager2 = new NoteManager({ onNoteSet: vi.fn(), onNoteRequested: vi.fn(), storage });
       const note = manager2.getCurrentNote();
-      expect(note).to.not.be.null;
-      expect(note!.text).to.equal('Persisted context');
+      expect(note).not.toBeNull();
+      expect(note!.text).toBe('Persisted context');
     });
 
     it('should report hasNote() true when loaded from storage', () => {
@@ -72,26 +73,26 @@ describe('NoteManager - storage persistence', () => {
       const manager1 = new NoteManager({ onNoteSet, onNoteRequested, storage });
       manager1.saveNote('Context note');
 
-      const manager2 = new NoteManager({ onNoteSet: sinon.spy(), onNoteRequested: sinon.spy(), storage });
-      expect(manager2.hasNote()).to.be.true;
+      const manager2 = new NoteManager({ onNoteSet: vi.fn(), onNoteRequested: vi.fn(), storage });
+      expect(manager2.hasNote()).toBe(true);
     });
 
     it('should start with no note when storage is empty', () => {
       const storage = makeStorage();
       const manager = new NoteManager({ onNoteSet, onNoteRequested, storage });
-      expect(manager.getCurrentNote()).to.be.null;
+      expect(manager.getCurrentNote()).toBeNull();
     });
 
     it('should handle corrupt storage data gracefully', () => {
       const storage = makeStorage({ [STORAGE_KEY]: 'bad data{{{' });
       const manager = new NoteManager({ onNoteSet, onNoteRequested, storage });
-      expect(manager.getCurrentNote()).to.be.null;
+      expect(manager.getCurrentNote()).toBeNull();
     });
 
     it('should handle empty string storage value gracefully', () => {
       const storage = makeStorage({ [STORAGE_KEY]: '' });
       const manager = new NoteManager({ onNoteSet, onNoteRequested, storage });
-      expect(manager.getCurrentNote()).to.be.null;
+      expect(manager.getCurrentNote()).toBeNull();
     });
   });
 
@@ -99,7 +100,7 @@ describe('NoteManager - storage persistence', () => {
     it('should work normally without storage', () => {
       const manager = new NoteManager({ onNoteSet, onNoteRequested });
       manager.saveNote('Test note');
-      expect(manager.getCurrentNote()!.text).to.equal('Test note');
+      expect(manager.getCurrentNote()!.text).toBe('Test note');
     });
   });
 });

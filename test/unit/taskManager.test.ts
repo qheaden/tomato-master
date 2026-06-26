@@ -1,72 +1,71 @@
-import { expect } from 'chai';
-import sinon from 'sinon';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TaskManager, Task } from '../../src/taskManager';
 
 describe('TaskManager', () => {
-  let onTasksChanged: sinon.SinonSpy;
+  let onTasksChanged: ReturnType<typeof vi.fn>;
   let manager: TaskManager;
 
   beforeEach(() => {
-    onTasksChanged = sinon.spy();
+    onTasksChanged = vi.fn();
     manager = new TaskManager({ onTasksChanged });
   });
 
   afterEach(() => {
-    sinon.restore();
+    vi.restoreAllMocks();
   });
 
   describe('addTask()', () => {
     it('should add a task and return it', () => {
       const task = manager.addTask('Write tests');
-      expect(task.text).to.equal('Write tests');
-      expect(task.completed).to.be.false;
-      expect(task.id).to.be.a('string');
+      expect(task.text).toBe('Write tests');
+      expect(task.completed).toBe(false);
+      expect(task.id).toEqual(expect.any(String));
     });
 
     it('should call onTasksChanged after adding', () => {
       manager.addTask('Task A');
-      expect(onTasksChanged.calledOnce).to.be.true;
+      expect(onTasksChanged).toHaveBeenCalledTimes(1);
     });
 
     it('should trim whitespace from task text', () => {
       const task = manager.addTask('  Hello World  ');
-      expect(task.text).to.equal('Hello World');
+      expect(task.text).toBe('Hello World');
     });
 
     it('should throw on empty task text', () => {
-      expect(() => manager.addTask('')).to.throw('Task text cannot be empty');
+      expect(() => manager.addTask('')).toThrow('Task text cannot be empty');
     });
 
     it('should throw on whitespace-only text', () => {
-      expect(() => manager.addTask('   ')).to.throw('Task text cannot be empty');
+      expect(() => manager.addTask('   ')).toThrow('Task text cannot be empty');
     });
 
     it('should auto-set first task as active', () => {
       manager.addTask('Task A');
       const active = manager.getActiveTask();
-      expect(active).to.not.be.null;
-      expect(active!.text).to.equal('Task A');
+      expect(active).not.toBeNull();
+      expect(active!.text).toBe('Task A');
     });
 
     it('should not change active task when adding subsequent tasks', () => {
       manager.addTask('Task A');
       manager.addTask('Task B');
       const active = manager.getActiveTask();
-      expect(active!.text).to.equal('Task A');
+      expect(active!.text).toBe('Task A');
     });
 
     it('should assign unique IDs to each task', () => {
       const t1 = manager.addTask('Task 1');
       const t2 = manager.addTask('Task 2');
-      expect(t1.id).to.not.equal(t2.id);
+      expect(t1.id).not.toBe(t2.id);
     });
 
     it('should include createdAt timestamp', () => {
       const before = Date.now();
       const task = manager.addTask('Task');
       const after = Date.now();
-      expect(task.createdAt).to.be.at.least(before);
-      expect(task.createdAt).to.be.at.most(after);
+      expect(task.createdAt).toBeGreaterThanOrEqual(before);
+      expect(task.createdAt).toBeLessThanOrEqual(after);
     });
   });
 
@@ -75,14 +74,14 @@ describe('TaskManager', () => {
       const task = manager.addTask('Task A');
       manager.completeTask(task.id);
       const tasks = manager.getTasks();
-      expect(tasks[0].completed).to.be.true;
+      expect(tasks[0].completed).toBe(true);
     });
 
     it('should call onTasksChanged after completing', () => {
       const task = manager.addTask('Task A');
-      onTasksChanged.resetHistory();
+      onTasksChanged.mockClear();
       manager.completeTask(task.id);
-      expect(onTasksChanged.calledOnce).to.be.true;
+      expect(onTasksChanged).toHaveBeenCalledTimes(1);
     });
 
     it('should set next incomplete task as active when active task is completed', () => {
@@ -90,24 +89,24 @@ describe('TaskManager', () => {
       manager.addTask('Task B');
       manager.completeTask(t1.id);
       const active = manager.getActiveTask();
-      expect(active!.text).to.equal('Task B');
+      expect(active!.text).toBe('Task B');
     });
 
     it('should set active to null when last task is completed', () => {
       const t1 = manager.addTask('Task A');
       manager.completeTask(t1.id);
-      expect(manager.getActiveTask()).to.be.null;
+      expect(manager.getActiveTask()).toBeNull();
     });
 
     it('should throw on unknown task id', () => {
-      expect(() => manager.completeTask('999')).to.throw('Task 999 not found');
+      expect(() => manager.completeTask('999')).toThrow('Task 999 not found');
     });
 
     it('should not change active task when completing a non-active task', () => {
       const t1 = manager.addTask('Task A');
       const t2 = manager.addTask('Task B');
       manager.completeTask(t2.id);
-      expect(manager.getActiveTask()!.id).to.equal(t1.id);
+      expect(manager.getActiveTask()!.id).toBe(t1.id);
     });
   });
 
@@ -115,31 +114,31 @@ describe('TaskManager', () => {
     it('should remove the task from the list', () => {
       const task = manager.addTask('Task A');
       manager.deleteTask(task.id);
-      expect(manager.getTasks()).to.have.length(0);
+      expect(manager.getTasks()).toHaveLength(0);
     });
 
     it('should call onTasksChanged after deleting', () => {
       const task = manager.addTask('Task A');
-      onTasksChanged.resetHistory();
+      onTasksChanged.mockClear();
       manager.deleteTask(task.id);
-      expect(onTasksChanged.calledOnce).to.be.true;
+      expect(onTasksChanged).toHaveBeenCalledTimes(1);
     });
 
     it('should throw on unknown task id', () => {
-      expect(() => manager.deleteTask('not-a-real-id')).to.throw();
+      expect(() => manager.deleteTask('not-a-real-id')).toThrow();
     });
 
     it('should set next active task when active is deleted', () => {
       const t1 = manager.addTask('Task A');
       const t2 = manager.addTask('Task B');
       manager.deleteTask(t1.id);
-      expect(manager.getActiveTask()!.id).to.equal(t2.id);
+      expect(manager.getActiveTask()!.id).toBe(t2.id);
     });
 
     it('should set active to null when only task is deleted', () => {
       const t1 = manager.addTask('Only Task');
       manager.deleteTask(t1.id);
-      expect(manager.getActiveTask()).to.be.null;
+      expect(manager.getActiveTask()).toBeNull();
     });
   });
 
@@ -148,45 +147,45 @@ describe('TaskManager', () => {
       manager.addTask('Task A');
       const t2 = manager.addTask('Task B');
       manager.setActiveTask(t2.id);
-      expect(manager.getActiveTask()!.id).to.equal(t2.id);
+      expect(manager.getActiveTask()!.id).toBe(t2.id);
     });
 
     it('should call onTasksChanged', () => {
       manager.addTask('Task A');
       const t2 = manager.addTask('Task B');
-      onTasksChanged.resetHistory();
+      onTasksChanged.mockClear();
       manager.setActiveTask(t2.id);
-      expect(onTasksChanged.calledOnce).to.be.true;
+      expect(onTasksChanged).toHaveBeenCalledTimes(1);
     });
 
     it('should throw on unknown id', () => {
-      expect(() => manager.setActiveTask('unknown')).to.throw();
+      expect(() => manager.setActiveTask('unknown')).toThrow();
     });
 
     it('should throw when setting a completed task as active', () => {
       const task = manager.addTask('Task A');
       manager.completeTask(task.id);
-      expect(() => manager.setActiveTask(task.id)).to.throw('Cannot set a completed task as active');
+      expect(() => manager.setActiveTask(task.id)).toThrow('Cannot set a completed task as active');
     });
   });
 
   describe('getTasks()', () => {
     it('should return empty array initially', () => {
-      expect(manager.getTasks()).to.have.length(0);
+      expect(manager.getTasks()).toHaveLength(0);
     });
 
     it('should return a copy of the tasks array', () => {
       manager.addTask('Task A');
       const tasks = manager.getTasks();
       tasks.push({ id: 'fake', text: 'fake', completed: false, createdAt: 0 });
-      expect(manager.getTasks()).to.have.length(1);
+      expect(manager.getTasks()).toHaveLength(1);
     });
 
     it('should return all tasks including completed', () => {
       const t1 = manager.addTask('Task A');
       manager.addTask('Task B');
       manager.completeTask(t1.id);
-      expect(manager.getTasks()).to.have.length(2);
+      expect(manager.getTasks()).toHaveLength(2);
     });
   });
 
@@ -196,32 +195,32 @@ describe('TaskManager', () => {
       manager.addTask('Task B');
       manager.completeTask(t1.id);
       const incomplete = manager.getIncompleteTasks();
-      expect(incomplete).to.have.length(1);
-      expect(incomplete[0].text).to.equal('Task B');
+      expect(incomplete).toHaveLength(1);
+      expect(incomplete[0].text).toBe('Task B');
     });
 
     it('should return empty array when all tasks complete', () => {
       const t1 = manager.addTask('Task A');
       manager.completeTask(t1.id);
-      expect(manager.getIncompleteTasks()).to.have.length(0);
+      expect(manager.getIncompleteTasks()).toHaveLength(0);
     });
   });
 
   describe('onTasksChanged callback', () => {
     it('should pass tasks and active task to callback', () => {
       manager.addTask('Task A');
-      const [tasks, active] = onTasksChanged.firstCall.args as [Task[], Task | null];
-      expect(tasks).to.have.length(1);
-      expect(active).to.not.be.null;
-      expect(active!.text).to.equal('Task A');
+      const [tasks, active] = onTasksChanged.mock.calls[0] as [Task[], Task | null];
+      expect(tasks).toHaveLength(1);
+      expect(active).not.toBeNull();
+      expect(active!.text).toBe('Task A');
     });
 
     it('should pass null active task when no tasks exist after delete', () => {
       const t = manager.addTask('Only Task');
-      onTasksChanged.resetHistory();
+      onTasksChanged.mockClear();
       manager.deleteTask(t.id);
-      const [, active] = onTasksChanged.firstCall.args as [Task[], Task | null];
-      expect(active).to.be.null;
+      const [, active] = onTasksChanged.mock.calls[0] as [Task[], Task | null];
+      expect(active).toBeNull();
     });
   });
 });

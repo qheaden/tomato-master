@@ -1,41 +1,39 @@
-import { expect } from 'chai';
-import sinon from 'sinon';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NotificationService, NotificationConstructor } from '../../src/notificationService';
 
-// Minimal mock types for AudioContext nodes
 interface MockAudioParam {
   value: number;
-  setValueAtTime: sinon.SinonStub;
-  linearRampToValueAtTime: sinon.SinonStub;
-  exponentialRampToValueAtTime: sinon.SinonStub;
+  setValueAtTime: ReturnType<typeof vi.fn>;
+  linearRampToValueAtTime: ReturnType<typeof vi.fn>;
+  exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
 }
 
 interface MockOscillator {
   type: string;
   frequency: MockAudioParam;
-  connect: sinon.SinonStub;
-  start: sinon.SinonStub;
-  stop: sinon.SinonStub;
+  connect: ReturnType<typeof vi.fn>;
+  start: ReturnType<typeof vi.fn>;
+  stop: ReturnType<typeof vi.fn>;
 }
 
 interface MockGainNode {
   gain: MockAudioParam;
-  connect: sinon.SinonStub;
+  connect: ReturnType<typeof vi.fn>;
 }
 
 interface MockAudioContext {
   currentTime: number;
   destination: object;
-  createOscillator: sinon.SinonStub;
-  createGain: sinon.SinonStub;
+  createOscillator: ReturnType<typeof vi.fn>;
+  createGain: ReturnType<typeof vi.fn>;
 }
 
 function makeAudioParam(): MockAudioParam {
   return {
     value: 0,
-    setValueAtTime: sinon.stub(),
-    linearRampToValueAtTime: sinon.stub(),
-    exponentialRampToValueAtTime: sinon.stub(),
+    setValueAtTime: vi.fn(),
+    linearRampToValueAtTime: vi.fn(),
+    exponentialRampToValueAtTime: vi.fn(),
   };
 }
 
@@ -43,16 +41,16 @@ function makeOscillator(): MockOscillator {
   return {
     type: 'sine',
     frequency: makeAudioParam(),
-    connect: sinon.stub(),
-    start: sinon.stub(),
-    stop: sinon.stub(),
+    connect: vi.fn(),
+    start: vi.fn(),
+    stop: vi.fn(),
   };
 }
 
 function makeGainNode(): MockGainNode {
   return {
     gain: makeAudioParam(),
-    connect: sinon.stub(),
+    connect: vi.fn(),
   };
 }
 
@@ -60,14 +58,14 @@ function makeMockAudioContext(currentTime = 0): MockAudioContext {
   return {
     currentTime,
     destination: {},
-    createOscillator: sinon.stub().callsFake(makeOscillator),
-    createGain: sinon.stub().callsFake(makeGainNode),
+    createOscillator: vi.fn(() => makeOscillator()),
+    createGain: vi.fn(() => makeGainNode()),
   };
 }
 
 interface MockNotificationCtor extends NotificationConstructor {
   _instances: Array<{ title: string; options?: object }>;
-  requestPermission: sinon.SinonStub;
+  requestPermission: ReturnType<typeof vi.fn>;
 }
 
 function makeMockNotificationCtor(permission: NotificationPermission = 'default'): MockNotificationCtor {
@@ -76,22 +74,22 @@ function makeMockNotificationCtor(permission: NotificationPermission = 'default'
   function MockNotification(this: object, title: string, options?: object) {
     instances.push({ title, options });
   }
-  MockNotification.requestPermission = sinon.stub().resolves(permission);
-  MockNotification.permission = permission;
-  MockNotification._instances = instances;
 
-  return MockNotification as unknown as MockNotificationCtor;
+  const typedMockNotification = MockNotification as unknown as MockNotificationCtor;
+  typedMockNotification.requestPermission = vi.fn().mockResolvedValue(permission);
+  typedMockNotification.permission = permission;
+  typedMockNotification._instances = instances;
+
+  return typedMockNotification;
 }
 
 describe('NotificationService', () => {
-  let sandbox: sinon.SinonSandbox;
-
   beforeEach(() => {
-    sandbox = sinon.createSandbox();
+    vi.restoreAllMocks();
   });
 
   afterEach(() => {
-    sandbox.restore();
+    vi.restoreAllMocks();
   });
 
   describe('requestPermission()', () => {
@@ -101,12 +99,11 @@ describe('NotificationService', () => {
 
       await service.requestPermission();
 
-      expect(ctor.requestPermission.calledOnce).to.be.true;
+      expect(ctor.requestPermission).toHaveBeenCalledTimes(1);
     });
 
     it('does nothing when NotificationCtor is not available', async () => {
       const service = new NotificationService({ NotificationCtor: undefined });
-      // Should not throw
       await service.requestPermission();
     });
 
@@ -117,7 +114,7 @@ describe('NotificationService', () => {
       await service.requestPermission();
       service.notify('Test');
 
-      expect(ctor._instances).to.have.length(1);
+      expect(ctor._instances).toHaveLength(1);
     });
 
     it('stores denied permission so notify() is blocked afterwards', async () => {
@@ -127,7 +124,7 @@ describe('NotificationService', () => {
       await service.requestPermission();
       service.notify('Test');
 
-      expect(ctor._instances).to.have.length(0);
+      expect(ctor._instances).toHaveLength(0);
     });
   });
 
@@ -139,8 +136,8 @@ describe('NotificationService', () => {
 
       service.notify('Timer Complete!', 'Great work!');
 
-      expect(ctor._instances).to.have.length(1);
-      expect(ctor._instances[0].title).to.equal('Timer Complete!');
+      expect(ctor._instances).toHaveLength(1);
+      expect(ctor._instances[0].title).toBe('Timer Complete!');
     });
 
     it('includes body in notification options', async () => {
@@ -151,7 +148,7 @@ describe('NotificationService', () => {
       service.notify('Title', 'Body text');
 
       const opts = ctor._instances[0].options as { body: string };
-      expect(opts.body).to.equal('Body text');
+      expect(opts.body).toBe('Body text');
     });
 
     it('does not require a body', async () => {
@@ -161,7 +158,7 @@ describe('NotificationService', () => {
 
       service.notify('Title only');
 
-      expect(ctor._instances).to.have.length(1);
+      expect(ctor._instances).toHaveLength(1);
     });
 
     it('does not create notification when permission is denied', async () => {
@@ -171,22 +168,20 @@ describe('NotificationService', () => {
 
       service.notify('Timer Complete!');
 
-      expect(ctor._instances).to.have.length(0);
+      expect(ctor._instances).toHaveLength(0);
     });
 
     it('does not create notification before requestPermission is called', () => {
       const ctor = makeMockNotificationCtor('granted');
       const service = new NotificationService({ NotificationCtor: ctor });
-      // requestPermission NOT called — internal permission stays 'default'
 
       service.notify('Timer Complete!');
 
-      expect(ctor._instances).to.have.length(0);
+      expect(ctor._instances).toHaveLength(0);
     });
 
     it('does nothing when NotificationCtor is not available', () => {
       const service = new NotificationService({ NotificationCtor: undefined });
-      // Should not throw
       service.notify('Test');
     });
   });
@@ -194,23 +189,23 @@ describe('NotificationService', () => {
   describe('playAlarm()', () => {
     it('creates an AudioContext on first call', () => {
       const mockCtx = makeMockAudioContext();
-      const createAudioContext = sinon.stub().returns(mockCtx);
+      const createAudioContext = vi.fn(() => mockCtx);
       const service = new NotificationService({ createAudioContext: createAudioContext as unknown as () => AudioContext });
 
       service.playAlarm();
 
-      expect(createAudioContext.calledOnce).to.be.true;
+      expect(createAudioContext).toHaveBeenCalledTimes(1);
     });
 
     it('reuses the same AudioContext on subsequent calls', () => {
       const mockCtx = makeMockAudioContext();
-      const createAudioContext = sinon.stub().returns(mockCtx);
+      const createAudioContext = vi.fn(() => mockCtx);
       const service = new NotificationService({ createAudioContext: createAudioContext as unknown as () => AudioContext });
 
       service.playAlarm();
       service.playAlarm();
 
-      expect(createAudioContext.calledOnce).to.be.true;
+      expect(createAudioContext).toHaveBeenCalledTimes(1);
     });
 
     it('creates 12 oscillators (4 beeps × 3 harmonics)', () => {
@@ -219,8 +214,8 @@ describe('NotificationService', () => {
 
       service.playAlarm();
 
-      expect(mockCtx.createOscillator.callCount).to.equal(12);
-      expect(mockCtx.createGain.callCount).to.equal(12);
+      expect(mockCtx.createOscillator).toHaveBeenCalledTimes(12);
+      expect(mockCtx.createGain).toHaveBeenCalledTimes(12);
     });
 
     it('starts and stops every oscillator', () => {
@@ -228,21 +223,21 @@ describe('NotificationService', () => {
       const mockCtx: MockAudioContext = {
         currentTime: 0,
         destination: {},
-        createOscillator: sinon.stub().callsFake(() => {
+        createOscillator: vi.fn(() => {
           const osc = makeOscillator();
           oscillators.push(osc);
           return osc;
         }),
-        createGain: sinon.stub().callsFake(makeGainNode),
+        createGain: vi.fn(() => makeGainNode()),
       };
       const service = new NotificationService({ createAudioContext: () => mockCtx as unknown as AudioContext });
 
       service.playAlarm();
 
-      expect(oscillators).to.have.length(12);
-      oscillators.forEach(osc => {
-        expect(osc.start.calledOnce).to.be.true;
-        expect(osc.stop.calledOnce).to.be.true;
+      expect(oscillators).toHaveLength(12);
+      oscillators.forEach((osc) => {
+        expect(osc.start).toHaveBeenCalledTimes(1);
+        expect(osc.stop).toHaveBeenCalledTimes(1);
       });
     });
 
@@ -251,32 +246,23 @@ describe('NotificationService', () => {
       const mockCtx: MockAudioContext = {
         currentTime: 0,
         destination: {},
-        createOscillator: sinon.stub().callsFake(() => {
+        createOscillator: vi.fn(() => {
           const osc = makeOscillator();
-          osc.start = sinon.stub().callsFake((t: number) => startTimes.push(t));
+          osc.start = vi.fn((t: number) => startTimes.push(t));
           return osc;
         }),
-        createGain: sinon.stub().callsFake(makeGainNode),
+        createGain: vi.fn(() => makeGainNode()),
       };
       const service = new NotificationService({ createAudioContext: () => mockCtx as unknown as AudioContext });
 
       service.playAlarm();
 
-      // 12 start calls: grouped in 3s per beep (same time within a beep)
-      expect(startTimes).to.have.length(12);
-
-      // First 3 oscillators all belong to beep 0 — same start time
-      expect(startTimes[0]).to.equal(startTimes[1]);
-      expect(startTimes[1]).to.equal(startTimes[2]);
-
-      // Beep 1 starts after beep 0
-      expect(startTimes[3]).to.be.greaterThan(startTimes[0]);
-
-      // Beep 2 starts after beep 1
-      expect(startTimes[6]).to.be.greaterThan(startTimes[3]);
-
-      // Beep 3 starts after beep 2
-      expect(startTimes[9]).to.be.greaterThan(startTimes[6]);
+      expect(startTimes).toHaveLength(12);
+      expect(startTimes[0]).toBe(startTimes[1]);
+      expect(startTimes[1]).toBe(startTimes[2]);
+      expect(startTimes[3]).toBeGreaterThan(startTimes[0]);
+      expect(startTimes[6]).toBeGreaterThan(startTimes[3]);
+      expect(startTimes[9]).toBeGreaterThan(startTimes[6]);
     });
 
     it('sets oscillator type to sine for each harmonic', () => {
@@ -284,19 +270,19 @@ describe('NotificationService', () => {
       const mockCtx: MockAudioContext = {
         currentTime: 0,
         destination: {},
-        createOscillator: sinon.stub().callsFake(() => {
+        createOscillator: vi.fn(() => {
           const osc = makeOscillator();
           oscillators.push(osc);
           return osc;
         }),
-        createGain: sinon.stub().callsFake(makeGainNode),
+        createGain: vi.fn(() => makeGainNode()),
       };
       const service = new NotificationService({ createAudioContext: () => mockCtx as unknown as AudioContext });
 
       service.playAlarm();
 
-      oscillators.forEach(osc => {
-        expect(osc.type).to.equal('sine');
+      oscillators.forEach((osc) => {
+        expect(osc.type).toBe('sine');
       });
     });
 
@@ -305,8 +291,8 @@ describe('NotificationService', () => {
       const mockCtx: MockAudioContext = {
         currentTime: 0,
         destination: {},
-        createOscillator: sinon.stub().callsFake(makeOscillator),
-        createGain: sinon.stub().callsFake(() => {
+        createOscillator: vi.fn(() => makeOscillator()),
+        createGain: vi.fn(() => {
           const g = makeGainNode();
           gainNodes.push(g);
           return g;
@@ -316,10 +302,10 @@ describe('NotificationService', () => {
 
       service.playAlarm();
 
-      gainNodes.forEach(g => {
-        expect(g.gain.setValueAtTime.calledOnce).to.be.true;
-        expect(g.gain.linearRampToValueAtTime.calledOnce).to.be.true;
-        expect(g.gain.exponentialRampToValueAtTime.calledOnce).to.be.true;
+      gainNodes.forEach((g) => {
+        expect(g.gain.setValueAtTime).toHaveBeenCalledTimes(1);
+        expect(g.gain.linearRampToValueAtTime).toHaveBeenCalledTimes(1);
+        expect(g.gain.exponentialRampToValueAtTime).toHaveBeenCalledTimes(1);
       });
     });
   });

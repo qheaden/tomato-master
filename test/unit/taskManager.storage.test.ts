@@ -1,26 +1,27 @@
-import { expect } from 'chai';
-import sinon from 'sinon';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TaskManager, TaskStorage } from '../../src/taskManager';
 
 function makeStorage(initial: Record<string, string> = {}): TaskStorage {
   const store: Record<string, string> = { ...initial };
   return {
     getItem: (key: string) => store[key] ?? null,
-    setItem: (key: string, value: string) => { store[key] = value; },
+    setItem: (key: string, value: string) => {
+      store[key] = value;
+    },
   };
 }
 
 const STORAGE_KEY = 'tomato-master:tasks';
 
 describe('TaskManager - storage persistence', () => {
-  let onTasksChanged: sinon.SinonSpy;
+  let onTasksChanged: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    onTasksChanged = sinon.spy();
+    onTasksChanged = vi.fn();
   });
 
   afterEach(() => {
-    sinon.restore();
+    vi.restoreAllMocks();
   });
 
   describe('saving to storage', () => {
@@ -29,10 +30,10 @@ describe('TaskManager - storage persistence', () => {
       const manager = new TaskManager({ onTasksChanged, storage });
       manager.addTask('Test task');
       const raw = storage.getItem(STORAGE_KEY);
-      expect(raw).to.not.be.null;
+      expect(raw).not.toBeNull();
       const state = JSON.parse(raw!);
-      expect(state.tasks).to.have.length(1);
-      expect(state.tasks[0].text).to.equal('Test task');
+      expect(state.tasks).toHaveLength(1);
+      expect(state.tasks[0].text).toBe('Test task');
     });
 
     it('should save activeTaskId to storage', () => {
@@ -42,7 +43,7 @@ describe('TaskManager - storage persistence', () => {
       const t2 = manager.addTask('Task B');
       manager.setActiveTask(t2.id);
       const state = JSON.parse(storage.getItem(STORAGE_KEY)!);
-      expect(state.activeTaskId).to.equal(t2.id);
+      expect(state.activeTaskId).toBe(t2.id);
     });
 
     it('should update storage when a task is completed', () => {
@@ -51,7 +52,7 @@ describe('TaskManager - storage persistence', () => {
       const task = manager.addTask('Task A');
       manager.completeTask(task.id);
       const state = JSON.parse(storage.getItem(STORAGE_KEY)!);
-      expect(state.tasks[0].completed).to.be.true;
+      expect(state.tasks[0].completed).toBe(true);
     });
 
     it('should update storage when a task is deleted', () => {
@@ -60,7 +61,7 @@ describe('TaskManager - storage persistence', () => {
       const task = manager.addTask('Task A');
       manager.deleteTask(task.id);
       const state = JSON.parse(storage.getItem(STORAGE_KEY)!);
-      expect(state.tasks).to.have.length(0);
+      expect(state.tasks).toHaveLength(0);
     });
 
     it('should save nextId to storage', () => {
@@ -69,7 +70,7 @@ describe('TaskManager - storage persistence', () => {
       manager.addTask('Task 1');
       manager.addTask('Task 2');
       const state = JSON.parse(storage.getItem(STORAGE_KEY)!);
-      expect(state.nextId).to.equal(3);
+      expect(state.nextId).toBe(3);
     });
   });
 
@@ -79,10 +80,10 @@ describe('TaskManager - storage persistence', () => {
       const manager1 = new TaskManager({ onTasksChanged, storage });
       manager1.addTask('Persisted Task');
 
-      const manager2 = new TaskManager({ onTasksChanged: sinon.spy(), storage });
+      const manager2 = new TaskManager({ onTasksChanged: vi.fn(), storage });
       const tasks = manager2.getTasks();
-      expect(tasks).to.have.length(1);
-      expect(tasks[0].text).to.equal('Persisted Task');
+      expect(tasks).toHaveLength(1);
+      expect(tasks[0].text).toBe('Persisted Task');
     });
 
     it('should restore activeTaskId from storage', () => {
@@ -92,8 +93,8 @@ describe('TaskManager - storage persistence', () => {
       const t2 = manager1.addTask('Task B');
       manager1.setActiveTask(t2.id);
 
-      const manager2 = new TaskManager({ onTasksChanged: sinon.spy(), storage });
-      expect(manager2.getActiveTask()!.id).to.equal(t2.id);
+      const manager2 = new TaskManager({ onTasksChanged: vi.fn(), storage });
+      expect(manager2.getActiveTask()!.id).toBe(t2.id);
     });
 
     it('should resume nextId so IDs do not repeat after reload', () => {
@@ -101,22 +102,22 @@ describe('TaskManager - storage persistence', () => {
       const manager1 = new TaskManager({ onTasksChanged, storage });
       const t1 = manager1.addTask('Task 1');
 
-      const manager2 = new TaskManager({ onTasksChanged: sinon.spy(), storage });
+      const manager2 = new TaskManager({ onTasksChanged: vi.fn(), storage });
       const t2 = manager2.addTask('Task 2');
-      expect(t2.id).to.not.equal(t1.id);
+      expect(t2.id).not.toBe(t1.id);
     });
 
     it('should start empty when storage has no data', () => {
       const storage = makeStorage();
       const manager = new TaskManager({ onTasksChanged, storage });
-      expect(manager.getTasks()).to.have.length(0);
-      expect(manager.getActiveTask()).to.be.null;
+      expect(manager.getTasks()).toHaveLength(0);
+      expect(manager.getActiveTask()).toBeNull();
     });
 
     it('should handle corrupt storage data gracefully', () => {
       const storage = makeStorage({ [STORAGE_KEY]: 'not valid json{{{' });
       const manager = new TaskManager({ onTasksChanged, storage });
-      expect(manager.getTasks()).to.have.length(0);
+      expect(manager.getTasks()).toHaveLength(0);
     });
   });
 
@@ -124,7 +125,7 @@ describe('TaskManager - storage persistence', () => {
     it('should work normally without storage', () => {
       const manager = new TaskManager({ onTasksChanged });
       manager.addTask('Task A');
-      expect(manager.getTasks()).to.have.length(1);
+      expect(manager.getTasks()).toHaveLength(1);
     });
   });
 
@@ -133,8 +134,8 @@ describe('TaskManager - storage persistence', () => {
       const storage = makeStorage();
       const manager = new TaskManager({ onTasksChanged, storage, storageKey: 'custom:key' });
       manager.addTask('Side quest');
-      expect(storage.getItem('custom:key')).to.not.be.null;
-      expect(storage.getItem(STORAGE_KEY)).to.be.null;
+      expect(storage.getItem('custom:key')).not.toBeNull();
+      expect(storage.getItem(STORAGE_KEY)).toBeNull();
     });
 
     it('should load from the custom key on construction', () => {
@@ -142,23 +143,23 @@ describe('TaskManager - storage persistence', () => {
       const m1 = new TaskManager({ onTasksChanged, storage, storageKey: 'custom:key' });
       m1.addTask('Persisted side quest');
 
-      const m2 = new TaskManager({ onTasksChanged: sinon.spy(), storage, storageKey: 'custom:key' });
+      const m2 = new TaskManager({ onTasksChanged: vi.fn(), storage, storageKey: 'custom:key' });
       const tasks = m2.getTasks();
-      expect(tasks).to.have.length(1);
-      expect(tasks[0].text).to.equal('Persisted side quest');
+      expect(tasks).toHaveLength(1);
+      expect(tasks[0].text).toBe('Persisted side quest');
     });
 
     it('should keep two managers with different keys isolated', () => {
       const storage = makeStorage();
       const m1 = new TaskManager({ onTasksChanged, storage, storageKey: 'ns:tasks' });
-      const m2 = new TaskManager({ onTasksChanged: sinon.spy(), storage, storageKey: 'ns:side-quests' });
+      const m2 = new TaskManager({ onTasksChanged: vi.fn(), storage, storageKey: 'ns:side-quests' });
       m1.addTask('Work task');
       m2.addTask('Side quest');
 
-      const reloaded1 = new TaskManager({ onTasksChanged: sinon.spy(), storage, storageKey: 'ns:tasks' });
-      const reloaded2 = new TaskManager({ onTasksChanged: sinon.spy(), storage, storageKey: 'ns:side-quests' });
-      expect(reloaded1.getTasks().map(t => t.text)).to.deep.equal(['Work task']);
-      expect(reloaded2.getTasks().map(t => t.text)).to.deep.equal(['Side quest']);
+      const reloaded1 = new TaskManager({ onTasksChanged: vi.fn(), storage, storageKey: 'ns:tasks' });
+      const reloaded2 = new TaskManager({ onTasksChanged: vi.fn(), storage, storageKey: 'ns:side-quests' });
+      expect(reloaded1.getTasks().map((t) => t.text)).toEqual(['Work task']);
+      expect(reloaded2.getTasks().map((t) => t.text)).toEqual(['Side quest']);
     });
   });
 });

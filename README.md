@@ -24,25 +24,41 @@ Install dependencies:
 npm install
 ```
 
-Build the app (compiles TypeScript and outputs to `dist/`):
+Start the Vite dev server:
+
+```bash
+npm run dev
+```
+
+Build the app for production into `dist/`:
 
 ```bash
 npm run build
 ```
 
-Serve locally:
+Preview the production build locally:
 
 ```bash
 npm run serve
 ```
 
-Then open `http://localhost:3000` in your browser.
+Then open the preview URL shown by Vite in your browser.
 
 ## Running Tests
+
+Run the unit test suite once:
 
 ```bash
 npm test
 ```
+
+Run Vitest in watch mode:
+
+```bash
+npm run test:watch
+```
+
+All current unit tests run in Vitest's `node` environment; no `jsdom` setup is required.
 
 ## Usage
 

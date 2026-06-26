@@ -1,12 +1,16 @@
-import { expect } from 'chai';
+import { describe, expect, it } from 'vitest';
 import { YouTubePlaybackState, PlaybackStorage } from '../../src/youtubePlaybackState';
 
 function makeStorage(initial: Record<string, string> = {}): PlaybackStorage {
   const store: Record<string, string> = { ...initial };
   return {
     getItem: (key: string) => store[key] ?? null,
-    setItem: (key: string, value: string) => { store[key] = value; },
-    removeItem: (key: string) => { delete store[key]; },
+    setItem: (key: string, value: string) => {
+      store[key] = value;
+    },
+    removeItem: (key: string) => {
+      delete store[key];
+    },
   };
 }
 
@@ -16,8 +20,8 @@ describe('YouTubePlaybackState', () => {
       const storage = makeStorage();
       const state = new YouTubePlaybackState(storage);
       state.save(3, 142.5);
-      expect(storage.getItem(YouTubePlaybackState.INDEX_KEY)).to.equal('3');
-      expect(storage.getItem(YouTubePlaybackState.POSITION_KEY)).to.equal('142.5');
+      expect(storage.getItem(YouTubePlaybackState.INDEX_KEY)).toBe('3');
+      expect(storage.getItem(YouTubePlaybackState.POSITION_KEY)).toBe('142.5');
     });
 
     it('overwrites previously saved values', () => {
@@ -25,8 +29,8 @@ describe('YouTubePlaybackState', () => {
       const state = new YouTubePlaybackState(storage);
       state.save(0, 10);
       state.save(2, 99.9);
-      expect(storage.getItem(YouTubePlaybackState.INDEX_KEY)).to.equal('2');
-      expect(storage.getItem(YouTubePlaybackState.POSITION_KEY)).to.equal('99.9');
+      expect(storage.getItem(YouTubePlaybackState.INDEX_KEY)).toBe('2');
+      expect(storage.getItem(YouTubePlaybackState.POSITION_KEY)).toBe('99.9');
     });
   });
 
@@ -34,19 +38,19 @@ describe('YouTubePlaybackState', () => {
     it('returns null when storage is empty', () => {
       const storage = makeStorage();
       const state = new YouTubePlaybackState(storage);
-      expect(state.load()).to.be.null;
+      expect(state.load()).toBeNull();
     });
 
     it('returns null when only index key is present', () => {
       const storage = makeStorage({ [YouTubePlaybackState.INDEX_KEY]: '1' });
       const state = new YouTubePlaybackState(storage);
-      expect(state.load()).to.be.null;
+      expect(state.load()).toBeNull();
     });
 
     it('returns null when only position key is present', () => {
       const storage = makeStorage({ [YouTubePlaybackState.POSITION_KEY]: '30' });
       const state = new YouTubePlaybackState(storage);
-      expect(state.load()).to.be.null;
+      expect(state.load()).toBeNull();
     });
 
     it('returns parsed index and position when both keys are present', () => {
@@ -56,7 +60,7 @@ describe('YouTubePlaybackState', () => {
       });
       const state = new YouTubePlaybackState(storage);
       const result = state.load();
-      expect(result).to.deep.equal({ index: 4, position: 73.25 });
+      expect(result).toEqual({ index: 4, position: 73.25 });
     });
 
     it('returns null when index value is not a number', () => {
@@ -65,7 +69,7 @@ describe('YouTubePlaybackState', () => {
         [YouTubePlaybackState.POSITION_KEY]: '30',
       });
       const state = new YouTubePlaybackState(storage);
-      expect(state.load()).to.be.null;
+      expect(state.load()).toBeNull();
     });
 
     it('returns null when position value is not a number', () => {
@@ -74,14 +78,14 @@ describe('YouTubePlaybackState', () => {
         [YouTubePlaybackState.POSITION_KEY]: 'bad',
       });
       const state = new YouTubePlaybackState(storage);
-      expect(state.load()).to.be.null;
+      expect(state.load()).toBeNull();
     });
 
     it('round-trips a saved state correctly', () => {
       const storage = makeStorage();
       const state = new YouTubePlaybackState(storage);
       state.save(7, 222.75);
-      expect(state.load()).to.deep.equal({ index: 7, position: 222.75 });
+      expect(state.load()).toEqual({ index: 7, position: 222.75 });
     });
   });
 
@@ -91,8 +95,8 @@ describe('YouTubePlaybackState', () => {
       const state = new YouTubePlaybackState(storage);
       state.save(1, 50);
       state.clear();
-      expect(storage.getItem(YouTubePlaybackState.INDEX_KEY)).to.be.null;
-      expect(storage.getItem(YouTubePlaybackState.POSITION_KEY)).to.be.null;
+      expect(storage.getItem(YouTubePlaybackState.INDEX_KEY)).toBeNull();
+      expect(storage.getItem(YouTubePlaybackState.POSITION_KEY)).toBeNull();
     });
 
     it('load() returns null after clear()', () => {
@@ -100,13 +104,13 @@ describe('YouTubePlaybackState', () => {
       const state = new YouTubePlaybackState(storage);
       state.save(2, 100);
       state.clear();
-      expect(state.load()).to.be.null;
+      expect(state.load()).toBeNull();
     });
 
     it('does not throw when storage is already empty', () => {
       const storage = makeStorage();
       const state = new YouTubePlaybackState(storage);
-      expect(() => state.clear()).to.not.throw();
+      expect(() => state.clear()).not.toThrow();
     });
   });
 });

@@ -196,29 +196,40 @@ Likely files to update during implementation:
 
 ## Task List
 
-- [ ] Add `vite` and `vitest` dev dependencies.
-- [ ] Add `jsdom` if required by the chosen Vitest environment.
-- [ ] Remove obsolete tooling dependencies: `mocha`, `chai`, `@types/mocha`, `@types/chai`, `ts-node`, `sinon`, `@types/sinon`, `@playwright/test`, and any no-longer-needed `esbuild` dependency.
-- [ ] Update `package.json` scripts so `build` uses `vite build`.
-- [ ] Add `npm run dev` using the Vite dev server.
-- [ ] Change `serve` to use `vite preview`.
-- [ ] Change `npm test` to run `vitest run`.
-- [ ] Add `npm run test:watch` to run Vitest in watch mode.
-- [ ] Update `index.html` to be Vite-compatible as the app entry point.
-- [ ] Ensure `app.css` is loaded in a Vite-compatible way.
-- [ ] Add `vite.config.ts` and include Vitest config there if appropriate.
-- [ ] Update `tsconfig.json` for Vite/Vitest-compatible module and bundler settings.
-- [ ] Update or replace `tsconfig.test.json` if needed for Vitest.
-- [ ] Configure Vitest test discovery and environment settings.
-- [ ] Migrate test imports from Mocha/Chai to Vitest.
-- [ ] Replace all Sinon spies/stubs/mocks with Vitest `vi` APIs.
-- [ ] Update any assertion syntax that is not directly compatible with Vitest.
-- [ ] Verify browser-adjacent tests under the selected Vitest environment and add setup/config as needed.
-- [ ] Remove any Playwright-related files or config that exist in the repository.
-- [ ] Update `README.md` to document `npm run dev`, `npm run build`, `npm run serve`, `npm test`, and `npm run test:watch`.
-- [ ] Regenerate/update `package-lock.json`.
-- [ ] Run `npm test` and fix any failures.
-- [ ] Run `npm run test:watch` and confirm watch mode works.
-- [ ] Run `npm run build` and verify `dist/` output is correct.
-- [ ] Run `npm run dev` and smoke-test the app locally.
-- [ ] Run `npm run serve` and smoke-test the production preview locally.
+- [x] Add `vite` and `vitest` dev dependencies.
+- [x] Add `jsdom` if required by the chosen Vitest environment.
+- [x] Remove obsolete tooling dependencies: `mocha`, `chai`, `@types/mocha`, `@types/chai`, `ts-node`, `sinon`, `@types/sinon`, `@playwright/test`, and any no-longer-needed `esbuild` dependency.
+- [x] Update `package.json` scripts so `build` uses `vite build`.
+- [x] Add `npm run dev` using the Vite dev server.
+- [x] Change `serve` to use `vite preview`.
+- [x] Change `npm test` to run `vitest run`.
+- [x] Add `npm run test:watch` to run Vitest in watch mode.
+- [x] Update `index.html` to be Vite-compatible as the app entry point.
+- [x] Ensure `app.css` is loaded in a Vite-compatible way.
+- [x] Add `vite.config.ts` and include Vitest config there if appropriate.
+- [x] Update `tsconfig.json` for Vite/Vitest-compatible module and bundler settings.
+- [x] Update or replace `tsconfig.test.json` if needed for Vitest.
+- [x] Configure Vitest test discovery and environment settings.
+- [x] Migrate test imports from Mocha/Chai to Vitest.
+- [x] Replace all Sinon spies/stubs/mocks with Vitest `vi` APIs.
+- [x] Update any assertion syntax that is not directly compatible with Vitest.
+- [x] Verify browser-adjacent tests under the selected Vitest environment and add setup/config as needed.
+- [x] Remove any Playwright-related files or config that exist in the repository.
+- [x] Update `README.md` to document `npm run dev`, `npm run build`, `npm run serve`, `npm test`, and `npm run test:watch`.
+- [x] Regenerate/update `package-lock.json`.
+- [x] Run `npm test` and fix any failures.
+- [x] Run `npm run test:watch` and confirm watch mode works.
+- [x] Run `npm run build` and verify `dist/` output is correct.
+- [x] Run `npm run dev` and smoke-test the app locally.
+- [x] Run `npm run serve` and smoke-test the production preview locally.
+
+## Completed 2026-06-25
+
+- Migrated the project from esbuild/Mocha/Chai/Sinon to Vite and Vitest.
+- Updated `package.json` scripts to use `vite`, `vite build`, `vite preview --port 3000`, `vitest run`, and `vitest` watch mode.
+- Removed obsolete tooling and Playwright-related files, and cleaned out unused helper dependencies.
+- Added `vite.config.ts`, switched TypeScript to bundler-friendly ESM settings, and refreshed `tsconfig.test.json` for Vitest.
+- Made `index.html` Vite-compatible by pointing the app entry at `/src/app.ts` while keeping stylesheet loading compatible with Vite.
+- Migrated all unit tests to Vitest imports, matchers, and `vi` mocks, keeping the suite in the `node` environment without needing `jsdom`.
+- Updated `README.md` with the new dev/build/test workflow.
+- Regenerated `package-lock.json` and validated the migration with `npm test`, `npm run test:watch`, `npm run build`, a dev-server smoke test, and a production preview smoke test.
