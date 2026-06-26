@@ -22,9 +22,3 @@
 - All TypeScript code must be unit tested
 - Tests must pass before any work is considered complete
 - Use mocking where appropriate to not depend on external services
-
-## Browser Testing
-
-- All browser testing must be performed by the qa-engineer subagent
-- If qa-engineer returns problems to fix, you must fix all issues and ask it to review again
-- Do not consider the application complete until the qa-engineer says all issues are fixed
