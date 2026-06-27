@@ -22,3 +22,12 @@
 - All TypeScript code must be unit tested
 - Tests must pass before any work is considered complete
 - Use mocking where appropriate to not depend on external services
+- Run unit tests with `npm run test:unit`
+
+## E2E Testing
+
+- Use Playwright for end-to-end tests that verify user-facing behavior in the browser
+- Any change that affects the UI for users must include a Playwright test covering the affected behavior
+- Keep E2E tests deterministic and avoid depending on external services; mock or stub external integrations where appropriate
+- E2E tests must pass before any UI-impacting work is considered complete
+- Run E2E tests with `npm run test:e2e`
