@@ -622,6 +622,7 @@ body[data-timer-type="long-break"] .ring-progress {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding-bottom: 16px;
 }
 
 .task-empty {
@@ -717,6 +718,48 @@ body[data-timer-type="long-break"] .ring-progress {
   color: var(--primary);
 }
 
+.task-drag-handle {
+  background: transparent;
+  border: none;
+  color: var(--on-surface-variant);
+  cursor: grab;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: opacity var(--transition), background var(--transition), color var(--transition);
+  flex-shrink: 0;
+}
+
+.task-drag-handle:active {
+  cursor: grabbing;
+}
+
+.task-drag-handle .material-icons {
+  font-size: 1.2rem;
+}
+
+.task-item:hover .task-drag-handle,
+.task-drag-handle:focus-visible {
+  opacity: 1;
+}
+
+.task-item.dragging {
+  opacity: 0.4;
+}
+
+.task-item.drag-over {
+  border-color: var(--primary);
+  box-shadow: inset 0 3px 0 var(--primary);
+}
+
+.task-list.drag-over-bottom {
+  padding-bottom: 16px;
+  border-bottom: 3px solid var(--primary);
+}
+
 /* ===========================
    Side Quests Card
 =========================== */
@@ -756,6 +799,15 @@ body[data-timer-type="long-break"] .ring-progress {
 .side-quests-card .task-delete-btn:hover {
   background: rgba(67, 160, 71, 0.12);
   color: var(--sq-primary);
+}
+
+.side-quests-card .task-item.drag-over {
+  border-color: var(--sq-primary);
+  box-shadow: inset 0 3px 0 var(--sq-primary);
+}
+
+.side-quests-card .task-list.drag-over-bottom {
+  border-bottom-color: var(--sq-primary);
 }
 
 .side-quests-card .sq-btn-fab {

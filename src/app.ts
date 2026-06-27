@@ -13,6 +13,8 @@ declare global {
   }
 }
 
+type TaskListType = 'tasks' | 'side-quests';
+
 class TomatoMasterApp {
   private timer: PomodoroTimer;
   private taskManager: TaskManager;
@@ -43,6 +45,12 @@ class TomatoMasterApp {
   private sideQuestList!: HTMLElement;
   private activeSideQuestDisplay!: HTMLElement;
   private sideQuestCard!: HTMLElement;
+  private draggedTaskId: string | null = null;
+  private draggedTaskListType: TaskListType | null = null;
+  private draggedTaskElement: HTMLElement | null = null;
+  private draggedHandleElement: HTMLElement | null = null;
+  private currentDropTargetId: string | null = null;
+  private dragOverBottomListType: TaskListType | null = null;
 
   // Note UI elements
   private noteModal!: HTMLElement;
@@ -194,6 +202,10 @@ class TomatoMasterApp {
     window.addEventListener('beforeunload', () => {
       this.savePlaybackState();
     });
+
+    document.addEventListener('pointermove', (event) => this.handleDragPointerMove(event));
+    document.addEventListener('pointerup', (event) => this.finishDrag(event));
+    document.addEventListener('pointercancel', (event) => this.finishDrag(event));
   }
 
   private initTheme(): void {
@@ -503,53 +515,19 @@ class TomatoMasterApp {
   }
 
   private renderSideQuests(tasks: Task[], activeTask: Task | null): void {
-    this.sideQuestList.innerHTML = '';
-
-    if (tasks.length === 0) {
-      this.sideQuestList.innerHTML = '<li class="task-empty">No side quests yet. Add one above!</li>';
-    } else {
-      tasks.forEach(task => {
-        const li = document.createElement('li');
-        li.className = `task-item${task.completed ? ' completed' : ''}${task.id === activeTask?.id ? ' active-task' : ''}`;
-        li.dataset.id = task.id;
-
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.checked = task.completed;
-        checkbox.className = 'task-checkbox';
-        checkbox.setAttribute('aria-label', `Mark "${task.text}" as complete`);
-        if (!task.completed) {
-          checkbox.addEventListener('change', () => this.sideQuestManager.completeTask(task.id));
-        }
-
-        const span = document.createElement('span');
-        span.className = 'task-text';
-        span.textContent = task.text;
-        if (!task.completed) {
-          span.addEventListener('click', () => this.sideQuestManager.setActiveTask(task.id));
-          span.title = 'Click to set as active side quest';
-        }
-
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'task-delete-btn';
-        deleteBtn.innerHTML = '<span class="material-icons">delete</span>';
-        deleteBtn.setAttribute('aria-label', `Delete side quest "${task.text}"`);
-        deleteBtn.addEventListener('click', () => this.sideQuestManager.deleteTask(task.id));
-
-        li.appendChild(checkbox);
-        li.appendChild(span);
-        li.appendChild(deleteBtn);
-        this.sideQuestList.appendChild(li);
-      });
-    }
-
-    if (activeTask) {
-      this.activeSideQuestDisplay.textContent = activeTask.text;
-      this.activeSideQuestDisplay.parentElement?.parentElement?.classList.remove('hidden');
-    } else {
-      this.activeSideQuestDisplay.textContent = '';
-      this.activeSideQuestDisplay.parentElement?.parentElement?.classList.add('hidden');
-    }
+    this.renderTaskList({
+      tasks,
+      activeTask,
+      listElement: this.sideQuestList,
+      emptyText: 'No side quests yet. Add one above!',
+      completeLabelPrefix: 'Mark',
+      deleteLabelPrefix: 'Delete side quest',
+      reorderLabelPrefix: 'Reorder side quest',
+      activeTitle: 'Click to set as active side quest',
+      listType: 'side-quests',
+      manager: this.sideQuestManager,
+    });
+    this.updateActiveTaskDisplay(this.activeSideQuestDisplay, activeTask);
   }
 
   private saveNote(): void {
@@ -656,53 +634,234 @@ class TomatoMasterApp {
   }
 
   private renderTasks(tasks: Task[], activeTask: Task | null): void {
-    this.taskList.innerHTML = '';
+    this.renderTaskList({
+      tasks,
+      activeTask,
+      listElement: this.taskList,
+      emptyText: 'No tasks yet. Add one above!',
+      completeLabelPrefix: 'Mark',
+      deleteLabelPrefix: 'Delete task',
+      reorderLabelPrefix: 'Reorder task',
+      activeTitle: 'Click to set as active task',
+      listType: 'tasks',
+      manager: this.taskManager,
+    });
+    this.updateActiveTaskDisplay(this.activeTaskDisplay, activeTask);
+  }
+
+  private renderTaskList(options: {
+    tasks: Task[];
+    activeTask: Task | null;
+    listElement: HTMLElement;
+    emptyText: string;
+    completeLabelPrefix: string;
+    deleteLabelPrefix: string;
+    reorderLabelPrefix: string;
+    activeTitle: string;
+    listType: TaskListType;
+    manager: TaskManager;
+  }): void {
+    const { tasks, activeTask, listElement, emptyText, completeLabelPrefix, deleteLabelPrefix, reorderLabelPrefix, activeTitle, listType, manager } = options;
+    listElement.innerHTML = '';
 
     if (tasks.length === 0) {
-      this.taskList.innerHTML = '<li class="task-empty">No tasks yet. Add one above!</li>';
-    } else {
-      tasks.forEach(task => {
-        const li = document.createElement('li');
-        li.className = `task-item${task.completed ? ' completed' : ''}${task.id === activeTask?.id ? ' active-task' : ''}`;
-        li.dataset.id = task.id;
-
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.checked = task.completed;
-        checkbox.className = 'task-checkbox';
-        checkbox.setAttribute('aria-label', `Mark "${task.text}" as complete`);
-        if (!task.completed) {
-          checkbox.addEventListener('change', () => this.taskManager.completeTask(task.id));
-        }
-
-        const span = document.createElement('span');
-        span.className = 'task-text';
-        span.textContent = task.text;
-        if (!task.completed) {
-          span.addEventListener('click', () => this.taskManager.setActiveTask(task.id));
-          span.title = 'Click to set as active task';
-        }
-
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'task-delete-btn';
-        deleteBtn.innerHTML = '<span class="material-icons">delete</span>';
-        deleteBtn.setAttribute('aria-label', `Delete task "${task.text}"`);
-        deleteBtn.addEventListener('click', () => this.taskManager.deleteTask(task.id));
-
-        li.appendChild(checkbox);
-        li.appendChild(span);
-        li.appendChild(deleteBtn);
-        this.taskList.appendChild(li);
-      });
+      listElement.innerHTML = `<li class="task-empty">${emptyText}</li>`;
+      return;
     }
 
-    // Update active task display
+    tasks.forEach(task => {
+      const li = document.createElement('li');
+      li.className = `task-item${task.completed ? ' completed' : ''}${task.id === activeTask?.id ? ' active-task' : ''}`;
+      li.dataset.id = task.id;
+      li.dataset.listType = listType;
+      li.dataset.testid = `${listType}-item-${task.id}`;
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = task.completed;
+      checkbox.className = 'task-checkbox';
+      checkbox.setAttribute('aria-label', `${completeLabelPrefix} "${task.text}" as complete`);
+      if (!task.completed) {
+        checkbox.addEventListener('change', () => manager.completeTask(task.id));
+      }
+
+      const span = document.createElement('span');
+      span.className = 'task-text';
+      span.textContent = task.text;
+      if (!task.completed) {
+        span.addEventListener('click', () => manager.setActiveTask(task.id));
+        span.title = activeTitle;
+      }
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'task-delete-btn';
+      deleteBtn.innerHTML = '<span class="material-icons">delete</span>';
+      deleteBtn.setAttribute('aria-label', `${deleteLabelPrefix} "${task.text}"`);
+      deleteBtn.addEventListener('click', () => manager.deleteTask(task.id));
+
+      const dragHandle = document.createElement('button');
+      dragHandle.type = 'button';
+      dragHandle.className = 'task-drag-handle';
+      dragHandle.innerHTML = '<span class="material-icons">more_vert</span>';
+      dragHandle.setAttribute('aria-label', `${reorderLabelPrefix} "${task.text}"`);
+      dragHandle.dataset.testid = `${listType}-reorder-${task.id}`;
+      dragHandle.title = 'Drag to reorder';
+      dragHandle.addEventListener('pointerdown', (event) => this.startDrag(event, task.id, listType, li, dragHandle));
+
+      li.appendChild(checkbox);
+      li.appendChild(span);
+      li.appendChild(deleteBtn);
+      li.appendChild(dragHandle);
+      listElement.appendChild(li);
+    });
+  }
+
+  private startDrag(event: PointerEvent, taskId: string, listType: TaskListType, rowElement: HTMLElement, handleElement: HTMLElement): void {
+    if (!event.isPrimary || event.button !== 0) {
+      return;
+    }
+
+    this.clearDragState();
+    this.draggedTaskId = taskId;
+    this.draggedTaskListType = listType;
+    this.draggedTaskElement = rowElement;
+    this.draggedHandleElement = handleElement;
+    rowElement.classList.add('dragging');
+    event.preventDefault();
+  }
+
+  private handleDragPointerMove(event: PointerEvent): void {
+    if (!this.draggedTaskId || !this.draggedTaskListType || !this.draggedTaskElement) {
+      return;
+    }
+
+    const taskRow = this.getTaskRowFromPoint(event.clientX, event.clientY);
+    if (taskRow && taskRow.dataset.listType === this.draggedTaskListType && taskRow.dataset.id !== this.draggedTaskId) {
+      this.setCurrentDropTarget(taskRow.dataset.id ?? null);
+      this.setBottomDropTarget(null);
+      return;
+    }
+
+    this.setCurrentDropTarget(null);
+    const bottomListType = this.getBottomDropListType(event.clientX, event.clientY);
+    this.setBottomDropTarget(bottomListType === this.draggedTaskListType ? bottomListType : null);
+  }
+
+  private finishDrag(event: PointerEvent): void {
+    if (!this.draggedTaskId || !this.draggedTaskListType) {
+      return;
+    }
+
+    const draggedTaskId = this.draggedTaskId;
+    const draggedTaskListType = this.draggedTaskListType;
+    const taskRow = this.getTaskRowFromPoint(event.clientX, event.clientY);
+    const targetTaskId = taskRow && taskRow.dataset.listType === draggedTaskListType && taskRow.dataset.id !== draggedTaskId
+      ? taskRow.dataset.id ?? null
+      : this.currentDropTargetId;
+    const bottomListType = this.getBottomDropListType(event.clientX, event.clientY);
+    const dropToBottom = bottomListType === draggedTaskListType || this.dragOverBottomListType === draggedTaskListType;
+
+    if (targetTaskId) {
+      this.getManagerForListType(draggedTaskListType).moveTaskBefore(draggedTaskId, targetTaskId);
+    } else if (dropToBottom) {
+      this.getManagerForListType(draggedTaskListType).moveTaskToEnd(draggedTaskId);
+    }
+
+    this.clearDragState();
+  }
+
+  private getManagerForListType(listType: TaskListType): TaskManager {
+    return listType === 'tasks' ? this.taskManager : this.sideQuestManager;
+  }
+
+  private getTaskRowFromPoint(clientX: number, clientY: number): HTMLElement | null {
+    const element = document.elementFromPoint(clientX, clientY);
+    return element?.closest('.task-item') as HTMLElement | null;
+  }
+
+  private getBottomDropListType(clientX: number, clientY: number): TaskListType | null {
+    const candidates: Array<{ listType: TaskListType; element: HTMLElement }> = [
+      { listType: 'tasks', element: this.taskList },
+      { listType: 'side-quests', element: this.sideQuestList },
+    ];
+
+    for (const candidate of candidates) {
+      const rect = candidate.element.getBoundingClientRect();
+      if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom + 32) {
+        continue;
+      }
+
+      const rows = Array.from(candidate.element.querySelectorAll('.task-item')) as HTMLElement[];
+      if (rows.length === 0) {
+        continue;
+      }
+
+      const lastRowRect = rows[rows.length - 1].getBoundingClientRect();
+      if (clientY >= lastRowRect.bottom) {
+        return candidate.listType;
+      }
+    }
+
+    return null;
+  }
+
+  private setCurrentDropTarget(taskId: string | null): void {
+    if (this.currentDropTargetId === taskId) {
+      return;
+    }
+
+    const activeListType = this.draggedTaskListType;
+
+    if (this.currentDropTargetId && activeListType) {
+      const previous = this.getListElement(activeListType).querySelector(`.task-item[data-id="${this.currentDropTargetId}"]`);
+      previous?.classList.remove('drag-over');
+    }
+
+    this.currentDropTargetId = taskId;
+
+    if (taskId && activeListType) {
+      const next = this.getListElement(activeListType).querySelector(`.task-item[data-id="${taskId}"]`);
+      next?.classList.add('drag-over');
+    }
+  }
+
+  private setBottomDropTarget(listType: TaskListType | null): void {
+    if (this.dragOverBottomListType === listType) {
+      return;
+    }
+
+    if (this.dragOverBottomListType) {
+      this.getListElement(this.dragOverBottomListType).classList.remove('drag-over-bottom');
+    }
+
+    this.dragOverBottomListType = listType;
+
+    if (listType) {
+      this.getListElement(listType).classList.add('drag-over-bottom');
+    }
+  }
+
+  private getListElement(listType: TaskListType): HTMLElement {
+    return listType === 'tasks' ? this.taskList : this.sideQuestList;
+  }
+
+  private clearDragState(): void {
+    this.draggedTaskElement?.classList.remove('dragging');
+    this.setCurrentDropTarget(null);
+    this.setBottomDropTarget(null);
+    this.draggedTaskId = null;
+    this.draggedTaskListType = null;
+    this.draggedTaskElement = null;
+    this.draggedHandleElement = null;
+  }
+
+  private updateActiveTaskDisplay(display: HTMLElement, activeTask: Task | null): void {
     if (activeTask) {
-      this.activeTaskDisplay.textContent = activeTask.text;
-      this.activeTaskDisplay.parentElement?.parentElement?.classList.remove('hidden');
+      display.textContent = activeTask.text;
+      display.parentElement?.parentElement?.classList.remove('hidden');
     } else {
-      this.activeTaskDisplay.textContent = '';
-      this.activeTaskDisplay.parentElement?.parentElement?.classList.add('hidden');
+      display.textContent = '';
+      display.parentElement?.parentElement?.classList.add('hidden');
     }
   }
 

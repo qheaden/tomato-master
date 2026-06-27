@@ -127,6 +127,36 @@ export class TaskManager {
     return this.tasks.filter(t => !t.completed);
   }
 
+  moveTaskBefore(taskId: string, beforeTaskId: string): void {
+    const taskIndex = this.tasks.findIndex(t => t.id === taskId);
+    if (taskIndex === -1) throw new Error(`Task ${taskId} not found`);
+
+    const beforeIndex = this.tasks.findIndex(t => t.id === beforeTaskId);
+    if (beforeIndex === -1) throw new Error(`Task ${beforeTaskId} not found`);
+
+    if (taskId === beforeTaskId) {
+      return;
+    }
+
+    const [task] = this.tasks.splice(taskIndex, 1);
+    const adjustedBeforeIndex = this.tasks.findIndex(t => t.id === beforeTaskId);
+    this.tasks.splice(adjustedBeforeIndex, 0, task);
+    this.notify();
+  }
+
+  moveTaskToEnd(taskId: string): void {
+    const taskIndex = this.tasks.findIndex(t => t.id === taskId);
+    if (taskIndex === -1) throw new Error(`Task ${taskId} not found`);
+
+    if (taskIndex === this.tasks.length - 1) {
+      return;
+    }
+
+    const [task] = this.tasks.splice(taskIndex, 1);
+    this.tasks.push(task);
+    this.notify();
+  }
+
   private notify(): void {
     this.saveToStorage();
     this.config.onTasksChanged([...this.tasks], this.getActiveTask());

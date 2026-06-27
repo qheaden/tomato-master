@@ -1,6 +1,21 @@
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 
-import { AppHarness, closeApp, setupApp } from './helpers/appFrame';
+import { AppHarness, byRole, byTestId, closeApp, setupApp } from './helpers/appFrame';
+
+async function addItems(app: AppHarness, inputLabel: string, buttonName: string, items: string[]): Promise<void> {
+  const input = app.getByLabelText(inputLabel);
+  const button = app.getByRole('button', { name: buttonName });
+
+  for (const item of items) {
+    await input.fill(item);
+    await button.click();
+  }
+}
+
+async function expectListOrder(app: AppHarness, prefix: 'tasks' | 'side-quests', ids: string[], expectedTexts: string[]): Promise<void> {
+  const texts = await Promise.all(ids.map((id) => app.getByTestId(`${prefix}-item-${id}`).text()));
+  expectedTexts.forEach((text, index) => expect(texts[index]).toContain(text));
+}
 
 describe('Tomato Master tasks', () => {
   let app: AppHarness;
@@ -39,6 +54,51 @@ describe('Tomato Master tasks', () => {
 
     await app.getByRole('button', { name: 'Delete task "Review PR"' }).click();
     expect(await tasksList.text()).not.toContain('Review PR');
+  });
+
+  test('reorders main tasks, moves a task to the bottom, and persists the order', async () => {
+    const tasksList = app.getByRole('list', { name: 'Tasks' });
+
+    await addItems(app, 'New task', 'Add task', ['Task A', 'Task B', 'Task C']);
+    await app.dragPointer(
+      byTestId('tasks-reorder-3'),
+      byTestId('tasks-item-1'),
+    );
+    await expectListOrder(app, 'tasks', ['3', '1', '2'], ['Task C', 'Task A', 'Task B']);
+
+    await app.dragPointer(
+      byTestId('tasks-reorder-3'),
+      byRole('list', 'Tasks'),
+      { dropPosition: 'bottom' },
+    );
+    await expectListOrder(app, 'tasks', ['1', '2', '3'], ['Task A', 'Task B', 'Task C']);
+
+    await app.reload();
+    expect(await tasksList.text()).toContain('Task A');
+    await expectListOrder(app, 'tasks', ['1', '2', '3'], ['Task A', 'Task B', 'Task C']);
+  });
+
+  test('reorders side quests with touch-style pointer input and persists the order', async () => {
+    const sideQuestList = app.getByRole('list', { name: 'Side Quests' });
+
+    await addItems(app, 'New side quest', 'Add side quest', ['Quest A', 'Quest B', 'Quest C']);
+    await app.dragPointer(
+      byTestId('side-quests-reorder-3'),
+      byTestId('side-quests-item-1'),
+      { pointerType: 'touch' },
+    );
+    await expectListOrder(app, 'side-quests', ['3', '1', '2'], ['Quest C', 'Quest A', 'Quest B']);
+
+    await app.dragPointer(
+      byTestId('side-quests-reorder-3'),
+      byRole('list', 'Side Quests'),
+      { pointerType: 'touch', dropPosition: 'bottom' },
+    );
+    await expectListOrder(app, 'side-quests', ['1', '2', '3'], ['Quest A', 'Quest B', 'Quest C']);
+
+    await app.reload();
+    expect(await sideQuestList.text()).toContain('Quest A');
+    await expectListOrder(app, 'side-quests', ['1', '2', '3'], ['Quest A', 'Quest B', 'Quest C']);
   });
 
   test('adds side quests and shows the break plan banner', async () => {

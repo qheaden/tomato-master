@@ -169,6 +169,108 @@ describe('TaskManager', () => {
     });
   });
 
+  describe('moveTaskBefore()', () => {
+    it('should keep the same order when moving the first task before the second task', () => {
+      const t1 = manager.addTask('Task A');
+      const t2 = manager.addTask('Task B');
+
+      onTasksChanged.mockClear();
+      manager.moveTaskBefore(t1.id, t2.id);
+
+      expect(manager.getTasks().map(task => task.id)).toEqual([t1.id, t2.id]);
+      expect(onTasksChanged).toHaveBeenCalledTimes(1);
+    });
+
+    it('should move the last task before the first task', () => {
+      const t1 = manager.addTask('Task A');
+      const t2 = manager.addTask('Task B');
+      const t3 = manager.addTask('Task C');
+
+      onTasksChanged.mockClear();
+      manager.moveTaskBefore(t3.id, t1.id);
+
+      expect(manager.getTasks().map(task => task.id)).toEqual([t3.id, t1.id, t2.id]);
+      expect(onTasksChanged).toHaveBeenCalledTimes(1);
+    });
+
+    it('should do nothing when moving a task before itself', () => {
+      const task = manager.addTask('Task A');
+
+      onTasksChanged.mockClear();
+      manager.moveTaskBefore(task.id, task.id);
+
+      expect(manager.getTasks().map(t => t.id)).toEqual([task.id]);
+      expect(onTasksChanged).not.toHaveBeenCalled();
+    });
+
+    it('should throw when moving a task before an unknown id', () => {
+      const task = manager.addTask('Task A');
+      expect(() => manager.moveTaskBefore(task.id, '999')).toThrow('Task 999 not found');
+    });
+
+    it('should throw when moving an unknown task', () => {
+      const task = manager.addTask('Task A');
+      expect(() => manager.moveTaskBefore('999', task.id)).toThrow('Task 999 not found');
+    });
+
+    it('should preserve active task when moving the active task', () => {
+      const firstTask = manager.addTask('Task A');
+      const activeTask = manager.addTask('Task B');
+      manager.setActiveTask(activeTask.id);
+      manager.addTask('Task C');
+
+      onTasksChanged.mockClear();
+      manager.moveTaskBefore(activeTask.id, firstTask.id);
+
+      expect(manager.getActiveTask()!.id).toBe(activeTask.id);
+      expect(onTasksChanged).toHaveBeenCalledTimes(1);
+    });
+
+    it('should move completed tasks', () => {
+      const t1 = manager.addTask('Task A');
+      const t2 = manager.addTask('Task B');
+      manager.completeTask(t2.id);
+
+      onTasksChanged.mockClear();
+      manager.moveTaskBefore(t2.id, t1.id);
+
+      const [firstTask] = manager.getTasks();
+      expect(firstTask.id).toBe(t2.id);
+      expect(firstTask.completed).toBe(true);
+      expect(onTasksChanged).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('moveTaskToEnd()', () => {
+    it('should move a task to the end', () => {
+      const t1 = manager.addTask('Task A');
+      const t2 = manager.addTask('Task B');
+      const t3 = manager.addTask('Task C');
+
+      onTasksChanged.mockClear();
+      manager.moveTaskToEnd(t1.id);
+
+      expect(manager.getTasks().map(task => task.id)).toEqual([t2.id, t3.id, t1.id]);
+      expect(onTasksChanged).toHaveBeenCalledTimes(1);
+    });
+
+    it('should do nothing when the task is already last', () => {
+      const firstTask = manager.addTask('Task A');
+      const lastTask = manager.addTask('Task B');
+
+      onTasksChanged.mockClear();
+      manager.moveTaskToEnd(lastTask.id);
+
+      expect(manager.getTasks().map(task => task.id)).toEqual([firstTask.id, lastTask.id]);
+      expect(onTasksChanged).not.toHaveBeenCalled();
+    });
+
+    it('should throw when moving an unknown task to the end', () => {
+      manager.addTask('Task A');
+      expect(() => manager.moveTaskToEnd('999')).toThrow('Task 999 not found');
+    });
+  });
+
   describe('getTasks()', () => {
     it('should return empty array initially', () => {
       expect(manager.getTasks()).toHaveLength(0);

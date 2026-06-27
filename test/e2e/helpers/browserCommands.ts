@@ -8,6 +8,8 @@ export type AppLocatorTarget =
   | { kind: 'text'; text: string }
   | { kind: 'testid'; text: string };
 
+export type DragPointerType = 'mouse' | 'touch';
+
 type BrowserCommandContext = {
   context: {
     newPage(): Promise<Page>;
@@ -57,6 +59,11 @@ export const browserCommands = {
       appPages.delete(sessionId);
     }
   },
+  reloadAppPage: async ({ sessionId }: BrowserCommandContext) => {
+    const page = getAppPage(sessionId);
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+  },
   clearAppStorage: async ({ context }: BrowserCommandContext) => {
     const tempPage = await context.newPage();
     try {
@@ -94,5 +101,77 @@ export const browserCommands = {
   },
   appClassName: async ({ sessionId }: BrowserCommandContext, target: AppLocatorTarget) => {
     return getAppLocator(getAppPage(sessionId), target).getAttribute('class');
+  },
+  appDragPointer: async (
+    { sessionId }: BrowserCommandContext,
+    source: AppLocatorTarget,
+    destination: AppLocatorTarget,
+    pointerType: DragPointerType = 'mouse',
+    dropPosition: 'center' | 'bottom' = 'center',
+  ) => {
+    const page = getAppPage(sessionId);
+    const sourceLocator = getAppLocator(page, source);
+    const destinationLocator = getAppLocator(page, destination);
+    const sourceBox = await sourceLocator.boundingBox();
+    const destinationBox = await destinationLocator.boundingBox();
+
+    if (!sourceBox || !destinationBox) {
+      throw new Error('Could not calculate drag coordinates');
+    }
+
+    const start = {
+      clientX: sourceBox.x + sourceBox.width / 2,
+      clientY: sourceBox.y + sourceBox.height / 2,
+    };
+    const end = {
+      clientX: destinationBox.x + destinationBox.width / 2,
+      clientY: dropPosition === 'bottom' ? destinationBox.y + destinationBox.height + 12 : destinationBox.y + destinationBox.height / 2,
+    };
+
+    if (pointerType === 'mouse') {
+      await page.mouse.move(start.clientX, start.clientY);
+      await page.mouse.down();
+      await page.mouse.move(end.clientX, end.clientY);
+      await page.mouse.up();
+      return;
+    }
+
+    await sourceLocator.evaluate((element, point) => {
+      element.dispatchEvent(new PointerEvent('pointerdown', {
+        bubbles: true,
+        pointerId: 1,
+        isPrimary: true,
+        button: 0,
+        buttons: 1,
+        clientX: point.clientX,
+        clientY: point.clientY,
+        pointerType: 'touch',
+      }));
+    }, start);
+
+    await page.evaluate(({ point }) => {
+      document.dispatchEvent(new PointerEvent('pointermove', {
+        bubbles: true,
+        pointerId: 1,
+        isPrimary: true,
+        buttons: 1,
+        clientX: point.clientX,
+        clientY: point.clientY,
+        pointerType: 'touch',
+      }));
+    }, { point: end });
+
+    await page.evaluate(({ point }) => {
+      document.dispatchEvent(new PointerEvent('pointerup', {
+        bubbles: true,
+        pointerId: 1,
+        isPrimary: true,
+        button: 0,
+        buttons: 0,
+        clientX: point.clientX,
+        clientY: point.clientY,
+        pointerType: 'touch',
+      }));
+    }, { point: end });
   },
 };

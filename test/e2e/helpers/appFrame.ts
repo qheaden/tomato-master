@@ -1,6 +1,6 @@
 import { commands } from 'vitest/browser';
 
-import { APP_BASE_URL, type AppLocatorTarget } from './browserCommands';
+import { APP_BASE_URL, type AppLocatorTarget, type DragPointerType } from './browserCommands';
 
 export type AppTarget = AppLocatorTarget;
 
@@ -61,6 +61,14 @@ export class AppLocator {
 }
 
 export class AppHarness {
+  async dragPointer(source: AppTarget, destination: AppTarget, options?: { pointerType?: DragPointerType; dropPosition?: 'center' | 'bottom' }): Promise<void> {
+    await commands.appDragPointer(source, destination, options?.pointerType ?? 'mouse', options?.dropPosition ?? 'center');
+  }
+
+  async reload(): Promise<void> {
+    await commands.reloadAppPage();
+  }
+
   getByRole(role: string, options?: { name?: string }): AppLocator {
     return new AppLocator(byRole(role, options?.name));
   }

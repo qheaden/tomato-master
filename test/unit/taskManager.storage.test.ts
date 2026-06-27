@@ -72,6 +72,20 @@ describe('TaskManager - storage persistence', () => {
       const state = JSON.parse(storage.getItem(STORAGE_KEY)!);
       expect(state.nextId).toBe(3);
     });
+
+    it('should save reordered task order to storage', () => {
+      const storage = makeStorage();
+      const manager = new TaskManager({ onTasksChanged, storage });
+      const t1 = manager.addTask('Task A');
+      const t2 = manager.addTask('Task B');
+      const t3 = manager.addTask('Task C');
+
+      manager.moveTaskBefore(t3.id, t1.id);
+      manager.moveTaskToEnd(t3.id);
+
+      const state = JSON.parse(storage.getItem(STORAGE_KEY)!);
+      expect(state.tasks.map((task: { id: string }) => task.id)).toEqual([t1.id, t2.id, t3.id]);
+    });
   });
 
   describe('loading from storage', () => {
@@ -105,6 +119,19 @@ describe('TaskManager - storage persistence', () => {
       const manager2 = new TaskManager({ onTasksChanged: vi.fn(), storage });
       const t2 = manager2.addTask('Task 2');
       expect(t2.id).not.toBe(t1.id);
+    });
+
+    it('should restore reordered task order after reload', () => {
+      const storage = makeStorage();
+      const manager1 = new TaskManager({ onTasksChanged, storage });
+      const t1 = manager1.addTask('Task A');
+      const t2 = manager1.addTask('Task B');
+      const t3 = manager1.addTask('Task C');
+
+      manager1.moveTaskBefore(t3.id, t1.id);
+
+      const manager2 = new TaskManager({ onTasksChanged: vi.fn(), storage });
+      expect(manager2.getTasks().map(task => task.id)).toEqual([t3.id, t1.id, t2.id]);
     });
 
     it('should start empty when storage has no data', () => {

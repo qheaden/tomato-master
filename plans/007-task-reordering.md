@@ -253,3 +253,17 @@ npm run build
 ## Open questions
 
 None at this time.
+
+## Task List
+
+- [x] Add task reordering methods to `src/taskManager.ts`
+- [x] Add unit and storage tests for task reordering
+- [x] Refactor `src/app.ts` to use reusable task list rendering helpers
+- [x] Add drag handle UI and pointer-driven reordering behavior in `src/app.ts`
+- [x] Add drag-and-drop styling in `app.css`
+- [x] Add Playwright E2E coverage for task and side quest reordering, including touch-style pointer input
+- [x] Run validation commands: `npm run test:unit`, `npm run test:e2e`, and `npm run build`
+
+## Completed 2026-06-27
+
+Implemented drag-handle reordering for tasks and side quests, including `TaskManager` reorder APIs, persistence updates, reusable task-list rendering, pointer-based drag/drop behavior, and new drag feedback styling. Added unit and storage coverage for reorder logic plus Playwright E2E tests for main tasks and side quests, including touch-style dragging and persistence after reload. Added stable test IDs for rendered task rows and reorder handles to support deterministic browser tests.
