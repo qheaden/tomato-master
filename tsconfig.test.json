@@ -4,5 +4,5 @@
     "types": ["node"],
     "noEmit": true
   },
-  "include": ["src/**/*", "test/unit/**/*", "vite.config.ts"]
+  "include": ["src/**/*", "test/unit/**/*", "test/e2e/**/*", "vite.config.ts"]
 }

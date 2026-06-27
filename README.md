@@ -52,7 +52,21 @@ Run the unit test suite once:
 npm test
 ```
 
-Run Vitest in watch mode:
+Run the browser E2E suite with Vitest Browser Mode and Playwright Chromium:
+
+```bash
+npm run test:e2e
+```
+
+This command starts `npm run dev` automatically and stops it when the E2E run finishes.
+
+Run all tests:
+
+```bash
+npm run test:all
+```
+
+Run Vitest in watch mode for unit tests:
 
 ```bash
 npm run test:watch
@@ -68,3 +82,4 @@ All current unit tests run in Vitest's `node` environment; no `jsdom` setup is r
 4. **Pause / cancel** — use the pause and stop buttons that appear once a session is running
 5. **Leave a context note** — when a work session ends (or is cancelled), a prompt appears to write a quick note about where you left off; this note is shown when you return from your break
 6. **Complete tasks** — check the checkbox next to a task to mark it done, or use the delete button to remove it
+

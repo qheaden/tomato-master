@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="app.css" />
 </head>
-<body>
+<body data-testid="app-body">
   <header class="app-header">
     <div class="header-inner">
       <span class="app-logo">🍅</span>
@@ -21,7 +21,7 @@
 
   <main class="app-main">
     <!-- Context Note Banner (shown after break ends) -->
-    <div id="note-context" class="note-context-banner hidden" role="alert" aria-live="polite">
+    <div id="note-context" data-testid="note-context" class="note-context-banner hidden" role="alert" aria-live="polite">
       <span class="material-icons note-icon">sticky_note_2</span>
       <div class="note-content">
         <p class="note-label">Your context note</p>
@@ -37,7 +37,7 @@
       <div class="active-task-banner">
         <span class="material-icons">task_alt</span>
         <p class="active-task-label">Working on:</p>
-        <p id="active-task-display" class="active-task-text"></p>
+        <p id="active-task-display" data-testid="active-task-display" class="active-task-text"></p>
       </div>
     </div>
 
@@ -46,7 +46,7 @@
       <div class="active-side-quest-banner">
         <span class="material-icons">explore</span>
         <p class="active-side-quest-label">Break plan:</p>
-        <p id="active-side-quest-display" class="active-side-quest-text"></p>
+        <p id="active-side-quest-display" data-testid="active-side-quest-display" class="active-side-quest-text"></p>
       </div>
     </div>
 
@@ -61,8 +61,8 @@
             transform="rotate(-90 132 132)" />
         </svg>
         <div class="timer-center">
-          <span id="timer-display" class="timer-display" aria-live="polite" aria-atomic="true">25:00</span>
-          <span id="timer-label" class="timer-label">Ready</span>
+          <span id="timer-display" data-testid="timer-display" class="timer-display" aria-live="polite" aria-atomic="true">25:00</span>
+          <span id="timer-label" data-testid="timer-label" class="timer-label">Ready</span>
         </div>
       </div>
 
@@ -159,14 +159,14 @@
           <span class="material-icons">playlist_add</span>
         </button>
       </div>
-      <div id="youtube-player-container" class="youtube-player-container hidden"></div>
+      <div id="youtube-player-container" data-testid="youtube-player-container" class="youtube-player-container hidden"></div>
     </div>
   </main>
 
 
 
   <!-- Note Modal -->
-  <div id="note-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div id="note-modal" data-testid="note-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal-card">
       <div class="modal-header">
         <span class="material-icons modal-icon">edit_note</span>

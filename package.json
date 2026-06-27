@@ -4,13 +4,19 @@
   "description": "A Pomodoro task tracker with note-taking context",
   "scripts": {
     "build": "vite build",
-    "dev": "vite",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "dev": "vite --port 5173 --strictPort",
+    "test": "vitest run --project unit",
+    "test:watch": "vitest --project unit",
+    "test:e2e:run": "vitest run --project e2e",
+    "test:e2e": "concurrently -k --success first -n dev,e2e \"npm run dev\" \"npm run test:e2e:run\"",
+    "test:all": "npm test && npm run test:e2e",
     "serve": "vite preview --port 3000"
   },
   "devDependencies": {
     "@types/node": "^20.11.5",
+    "@vitest/browser-playwright": "^4.1.9",
+    "concurrently": "^10.0.3",
+    "playwright": "^1.61.0",
     "typescript": "^5.3.3",
     "vite": "^8.1.0",
     "vitest": "^4.1.9"

@@ -236,17 +236,23 @@ npm run test:e2e
 
 ## Task List
 
-- [ ] Add `@vitest/browser-playwright`, `playwright`, and `concurrently` dev dependencies.
-- [ ] Ensure Chromium browser binaries are available.
-- [ ] Convert Vitest config to unit/e2e projects.
-- [ ] Configure the e2e project for Playwright Chromium in headless browser mode.
-- [ ] Add e2e npm scripts using `concurrently` and `npm run dev`.
-- [ ] Add shared e2e helper(s) for app base URL, server readiness, app iframe mounting, and state cleanup.
-- [ ] Add smoke e2e tests under `test/e2e`.
-- [ ] Add task and side quest e2e tests under `test/e2e`.
-- [ ] Add timer and context note e2e tests under `test/e2e`.
-- [ ] Add theme and YouTube playlist UI e2e tests under `test/e2e`.
-- [ ] Update README test instructions.
-- [ ] Run `npm test`.
-- [ ] Run `npm run test:e2e`.
-- [ ] Run `npm run build`.
+- [x] Add `@vitest/browser-playwright`, `playwright`, and `concurrently` dev dependencies.
+- [x] Ensure Chromium browser binaries are available.
+- [x] Convert Vitest config to unit/e2e projects.
+- [x] Configure the e2e project for Playwright Chromium in headless browser mode.
+- [x] Add e2e npm scripts using `concurrently` and `npm run dev`.
+- [x] Add shared e2e helper(s) for app base URL, server readiness, app iframe mounting, and state cleanup.
+- [x] Add smoke e2e tests under `test/e2e`.
+- [x] Add task and side quest e2e tests under `test/e2e`.
+- [x] Add timer and context note e2e tests under `test/e2e`.
+- [x] Add theme and YouTube playlist UI e2e tests under `test/e2e`.
+- [x] Update README test instructions.
+- [x] Run `npm test`.
+- [x] Run `npm run test:e2e`.
+- [x] Run `npm run build`.
+
+## Completed 2026-06-27
+
+- Reintroduced browser E2E coverage with Vitest Browser Mode + Playwright Chromium.
+- Split unit and E2E Vitest projects and added `test/e2e` coverage for smoke, tasks, timer/notes, theme, and YouTube UI flows.
+- Updated scripts to run E2E alongside the Vite dev server and verified `npm test`, `npm run test:e2e`, and `npm run build`.
